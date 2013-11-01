@@ -17,16 +17,16 @@ def LyID(name):
     c.execute('''SELECT id FROM legislator_legislator WHERE name = %s''',[name])
     return c.rowcount,c.fetchone()
 def AddProposal(committee,content,sessionPrd,session,date):
-    c.execute('''INSERT into legislator_proposal(committee,content,"sessionPrd",session,date) 
+    c.execute('''INSERT into proposal_proposal(committee,content,"sessionPrd",session,date) 
         SELECT %s,%s,%s,%s,%s
-        WHERE NOT EXISTS (SELECT committee,content,"sessionPrd",session,date FROM legislator_proposal WHERE committee = %s AND content = %s ) RETURNING id''',(committee,content,sessionPrd,session,date,committee,content))  
+        WHERE NOT EXISTS (SELECT committee,content,"sessionPrd",session,date FROM proposal_proposal WHERE committee = %s AND content = %s ) RETURNING id''',(committee,content,sessionPrd,session,date,committee,content))  
     r = c.fetchone()
     if r:
         return r[0]
 def MakeProposalRelation(legislator_id,proposal_id,priproposer):
-    c.execute('''INSERT into legislator_legislator_proposal(legislator_id,proposal_id,priproposer)
+    c.execute('''INSERT into proposal_legislator_proposal(legislator_id,proposal_id,priproposer)
         SELECT %s,%s,%s
-        WHERE NOT EXISTS (SELECT legislator_id,proposal_id,priproposer FROM legislator_legislator_proposal WHERE legislator_id = %s AND proposal_id = %s)''',(legislator_id,proposal_id,priproposer,legislator_id,proposal_id))  
+        WHERE NOT EXISTS (SELECT legislator_id,proposal_id,priproposer FROM proposal_legislator_proposal WHERE legislator_id = %s AND proposal_id = %s)''',(legislator_id,proposal_id,priproposer,legislator_id,proposal_id))  
 def LiterateProposer(text,proposal_id):
     firstName,priproposer = '',True
     for name in text.split():      
@@ -51,7 +51,7 @@ def LiterateProposer(text,proposal_id):
 def GetSession(text):
     return re.search(u'立法院第(?P<sessionPrd>\d){1,2}屆第[\d]{1,2}會期(第[\d]{1,2}次臨時會)?(?P<committee>[\W\s]{2,39})(兩|三|四|五|六|七|八)?委員會[\s]*第[\d]{1,2}次(全體委員|聯席)會議議事錄',text) , re.search(u"[\s]+散[\s]{0,4}會",text)
 def GetDate(text):
-    matchTerm = re.search(u'(\d)+年(\d)+月(\d)+',text)
+    matchTerm = re.search(u'(\d)+[\s]?年(\d)+[\s]?月(\d)+',text)
     if not matchTerm:
         return None
     matchDate = re.sub('[^0-9]', ' ', matchTerm.group())

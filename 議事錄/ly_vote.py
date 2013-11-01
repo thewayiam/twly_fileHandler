@@ -10,9 +10,9 @@ def LyID(name):
     c.execute('''SELECT id FROM legislator_legislator WHERE name = %s''',[name])
     return c.rowcount,c.fetchone()
 def AddVote(content,date,session):
-    c.execute('''INSERT into legislator_vote(content,date,session,hits) 
+    c.execute('''INSERT into vote_vote(content,date,session,hits) 
         SELECT %s,%s,%s,%s
-        WHERE NOT EXISTS (SELECT content,date,session,hits FROM legislator_vote WHERE content = %s ) RETURNING id''',(content,date,session,0,content))  
+        WHERE NOT EXISTS (SELECT content,date,session,hits FROM vote_vote WHERE content = %s ) RETURNING id''',(content,date,session,0,content))  
     r = c.fetchone()
     if r:
         return r[0]
@@ -26,9 +26,9 @@ def GetVote(text):
         i -= 1
     return ('\n'.join(l[i+1:])).lstrip()
 def MakeVoteRelation(legislator_id,vote_id,decision):
-    c.execute('''INSERT into legislator_legislator_vote(legislator_id,vote_id,decision)
+    c.execute('''INSERT into vote_legislator_vote(legislator_id,vote_id,decision)
         SELECT %s,%s,%s
-        WHERE NOT EXISTS (SELECT legislator_id,vote_id,decision FROM legislator_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id,vote_id,decision,legislator_id,vote_id))  
+        WHERE NOT EXISTS (SELECT legislator_id,vote_id,decision FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id,vote_id,decision,legislator_id,vote_id))  
 def LiterateVoter(text,vote_id,decision):
     firstName = ''
     for name in text.split():      
@@ -100,21 +100,21 @@ while ms:
     ms , me = ly_common.GetSessionROI(sourcetext)
 conn.commit()
 def party_Decision_List(party):
-    c.execute('''select vote_id,avg(decision) from legislator_legislator_vote
+    c.execute('''select vote_id,avg(decision) from vote_legislator_vote
     where legislator_id in (select id from legislator_legislator where party=%s)
     group by vote_id''',(party,))
     return c.fetchall()
 def personal_Decision_List(party,Vote_id):
-    c.execute('''select legislator_id,decision from legislator_legislator_vote
+    c.execute('''select legislator_id,decision from vote_legislator_vote
     where legislator_id in (select id from legislator_legislator where party=%s) and vote_id = %s''',(party,Vote_id))
     return c.fetchall()
 def party_List():
     c.execute('''select distinct(party) from legislator_legislator''')
     return c.fetchall()
 def conflict_vote(vote_id):
-    c.execute('''update legislator_vote set conflict=True where id=%s''',(vote_id,))
+    c.execute('''update vote_vote set conflict=True where id=%s''',(vote_id,))
 def conflict_legislator_vote(legislator_id,vote_id):
-    c.execute('''update legislator_legislator_vote set conflict=True where legislator_id=%s and vote_id=%s''',(legislator_id,vote_id))
+    c.execute('''update vote_legislator_vote set conflict=True where legislator_id=%s and vote_id=%s''',(legislator_id,vote_id))
 for party in party_List():
     if party != u'無':
         for v in party_Decision_List(party):
