@@ -16,8 +16,8 @@ File handler of http://twly.herokuapp.com/
 
 資料來源
 ======
-http://twly.herokuapp.com/legislator/reference/
+http://twly.herokuapp.com/reference/
 
 授權
 ======
-http://twly.herokuapp.com/legislator/about/
+http://twly.herokuapp.com/about/

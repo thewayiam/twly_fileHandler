@@ -4,9 +4,9 @@ import psycopg2,win32com,glob,os,re,difflib
 from win32com.client import Dispatch, constants
 
 def AddBill(billid,proposalid,law,title,motivation,description,committee,sessionPrd):
-    c.execute('''INSERT into legislator_bill(billid,proposalid,law,title,motivation,description,committee,"sessionPrd",hits) 
+    c.execute('''INSERT into bill_bill(billid,proposalid,law,title,motivation,description,committee,"sessionPrd",hits) 
         SELECT %s,%s,%s,%s,%s,%s,%s,%s,0
-        WHERE NOT EXISTS (SELECT billid,proposalid,law,title,motivation,description,committee,"sessionPrd",hits FROM legislator_bill WHERE billid = %s AND proposalid = %s) RETURNING id''',(billid,proposalid,law,title,motivation,description,committee,sessionPrd,billid,proposalid))  
+        WHERE NOT EXISTS (SELECT billid,proposalid,law,title,motivation,description,committee,"sessionPrd",hits FROM bill_bill WHERE billid = %s AND proposalid = %s) RETURNING id''',(billid,proposalid,law,title,motivation,description,committee,sessionPrd,billid,proposalid))  
     r = c.fetchone()
     if r:
         return r[0]
@@ -14,13 +14,13 @@ def LyID(name):
     c.execute('''SELECT id FROM legislator_legislator WHERE name = %s''',[name])
     return c.rowcount,c.fetchone()
 def MakeBillRelation(legislator_id,bill_id,priproposer):
-    c.execute('''INSERT into legislator_legislator_bill(legislator_id,bill_id,priproposer)
+    c.execute('''INSERT into bill_legislator_bill(legislator_id,bill_id,priproposer)
         SELECT %s,%s,%s
-        WHERE NOT EXISTS (SELECT legislator_id,bill_id,priproposer FROM legislator_legislator_bill WHERE legislator_id = %s AND bill_id = %s)''',(legislator_id,bill_id,priproposer,legislator_id,bill_id))      
+        WHERE NOT EXISTS (SELECT legislator_id,bill_id,priproposer FROM bill_legislator_bill WHERE legislator_id = %s AND bill_id = %s)''',(legislator_id,bill_id,priproposer,legislator_id,bill_id))      
 def AddBillDetail(bill_id,article,before,after,description):
-    c.execute('''INSERT into legislator_billdetail(bill_id,article,before,after,description)
+    c.execute('''INSERT into bill_billdetail(bill_id,article,before,after,description)
         SELECT %s,%s,%s,%s,%s
-        WHERE NOT EXISTS (SELECT bill_id,article,before,after,description FROM legislator_billdetail WHERE bill_id = %s AND article = %s)''',(bill_id,article,before,after,description,bill_id,article))      
+        WHERE NOT EXISTS (SELECT bill_id,article,before,after,description FROM bill_billdetail WHERE bill_id = %s AND article = %s)''',(bill_id,article,before,after,description,bill_id,article))      
 def LiterateProposer(text,bill_id):
     firstName,priproposer = '',True
     for name in text.split():      
