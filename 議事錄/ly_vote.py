@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys # 正常模組
+import sys 
 sys.path.append('../')
 import re,codecs,psycopg2
 import db_ly,ly_common
@@ -99,6 +99,7 @@ while ms:
     sourcetext = sourcetext[me.start()+1:]
     ms , me = ly_common.GetSessionROI(sourcetext)
 conn.commit()
+# --> conscience vote
 def party_Decision_List(party):
     c.execute('''select vote_id,avg(decision) from vote_legislator_vote
     where legislator_id in (select id from legislator_legislator where party=%s)
@@ -123,7 +124,36 @@ for party in party_List():
                 for p in personal_Decision_List(party,v[0]):
                     if p[1]*v[1] <= 0:
                         conflict_legislator_vote(p[0],v[0])      
-conn.commit()        
+conn.commit()
+# <-- conscience vote
+
+# --> not voting
+def vote_list():
+    c.execute('''select id, date from vote_vote''')
+    return c.fetchall()
+def not_voting_legislator_list(vote_id,vote_date):
+    c.execute('''select id
+                from legislator_legislator
+                where term_start <= %s and
+                    term_end > %s and
+                    id not in (select legislator_id
+                    from vote_legislator_vote 
+                    where vote_id = %s)''',(vote_date,vote_date,vote_id))
+    return c.fetchall()
+def insert_not_voting_record(legislator_id,vote_id):
+    c.execute('''INSERT into vote_legislator_vote(legislator_id,vote_id)
+        SELECT %s,%s
+        WHERE NOT EXISTS (SELECT legislator_id,vote_id FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id,vote_id,legislator_id,vote_id))   
+for vote_id, vote_date in vote_list():
+    for legislator_id in not_voting_legislator_list(vote_id,vote_date):
+        insert_not_voting_record(legislator_id, vote_id)
+conn.commit()
+# <-- not voting end
+
+# --> vote result
+
+
+# <-- vote result end
 print 'Succeed'
 
 

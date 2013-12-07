@@ -91,6 +91,8 @@ while(endP != -1):
     #print ly,facebook,wiki,officialsite
     sourcetext = sourcetext[endP+1:]
     endP = GetSessionEndPoint(sourcetext)
+c.execute('''update legislator_legislator set term_end=CAST('2016-02-01' AS DATE) where term_end isnull''')
+c.execute('''update legislator_legislator set term_start=CAST('2012-02-01' AS DATE) where term_start isnull''')
 conn.commit()
 print 'Succeed'
 
