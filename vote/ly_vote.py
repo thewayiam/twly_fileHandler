@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 import sys 
 sys.path.append('../')
-import re,codecs,psycopg2
-import db_ly,ly_common
+import re
+import codecs
+import psycopg2
 from datetime import datetime
+import db_ly
+import ly_common
 
-def LyID(name):
-    c.execute('''SELECT id FROM legislator_legislator WHERE name = %s''',[name])
-    return c.rowcount,c.fetchone()
+
 def AddVote(content,date,session):
     c.execute('''INSERT into vote_vote(content,date,session,hits) 
         SELECT %s,%s,%s,%s
@@ -29,7 +30,7 @@ def MakeVoteRelation(legislator_id,vote_id,decision):
     c.execute('''INSERT into vote_legislator_vote(legislator_id,vote_id,decision)
         SELECT %s,%s,%s
         WHERE NOT EXISTS (SELECT legislator_id,vote_id,decision FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id,vote_id,decision,legislator_id,vote_id))  
-def LiterateVoter(text,vote_id,decision):
+def LiterateVoter(c, text,vote_id,decision):
     firstName = ''
     for name in text.split():      
         #兩個字的立委中文名字中間有空白
@@ -41,12 +42,12 @@ def LiterateVoter(text,vote_id,decision):
             firstName = ''
             #print name
         #
-        rowcount,lyid = LyID(name)
-        if rowcount == 1 and lyid:
-            MakeVoteRelation(lyid[0],vote_id,decision)
+        legislator_id = ly_common.GetLegislatorId(c, name)
+        if legislator_id:
+            MakeVoteRelation(legislator_id,vote_id,decision)
         else:
             break
-def IterVote(text,date,session):
+def IterVote(c, text,date,session):
     match = None
     mvoter = re.search(u'記名(投票)?表決結果名單：',text) 
     if mvoter:
@@ -64,15 +65,15 @@ def IterVote(text,date,session):
                 if not mapprove:
                     print '==找不到贊成者==\n' , votertext
                 else:
-                    LiterateVoter(votertext[mapprove.end():],vote_id, 1)
+                    LiterateVoter(c, votertext[mapprove.end():],vote_id, 1)
                 if not mreject:
                     print '==找不到反對者==\n' , votertext
                 else:
-                    LiterateVoter(votertext[mreject.end():],vote_id, -1)
+                    LiterateVoter(c, votertext[mreject.end():],vote_id, -1)
                 if not mquit:
                     print '==找不到棄權者==\n' , votertext
                 else:
-                    LiterateVoter(votertext[mquit.end():],vote_id, 0)
+                    LiterateVoter(c, votertext[mquit.end():],vote_id, 0)
                     votertext = votertext[mquit.end():]
         if not match:
             print '有記名表決結果名單無附後'
@@ -90,12 +91,12 @@ while ms:
         session = ms.group()    
         date = ly_common.GetDate(singleSessionText)
         print session , date
-        IterVote(singleSessionText,date,session)
+        IterVote(c, singleSessionText,date,session)
         break
     session = ms.group()    
     date = ly_common.GetDate(singleSessionText)
     print session , date
-    IterVote(singleSessionText,date,session)         
+    IterVote(c, singleSessionText,date,session)         
     sourcetext = sourcetext[me.start()+1:]
     ms , me = ly_common.GetSessionROI(sourcetext)
 conn.commit()
