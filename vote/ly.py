@@ -44,26 +44,21 @@ def FindName(c, text, sitting_dict, beginStr, endStr):
 conn = db_ly.con()
 c = conn.cursor()
 sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()
-ms , me = ly_common.GetSessionROI(sourcetext)
+ms ,me, uid = ly_common.GetSessionROI(sourcetext)
 while ms:
-    uid = '%02d-%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('times')))
-    if ms.group('temptimes'):
-        uid = uid + '-T-%02d' % int(ms.group('temptimes'))
     sitting_dict = {"uid":uid, "name": ms.group(1), "ad": ms.group('ad'), "session": ms.group('session') }
     print ms.group(1) 
     FileLog(ms.group(1))
     if me:
         singleSessionText = sourcetext[:me.start()+1]
-    else:
+    else: # last session
         singleSessionText = sourcetext                 
     FindName(c, singleSessionText, sitting_dict, u"出席委員", u"委員出席")
     FindName(c, singleSessionText, sitting_dict, u"請假委員", u"委員請假")
     if me:
         sourcetext = sourcetext[me.start()+1:]
-        ms , me = ly_common.GetSessionROI(sourcetext)
-    else:
+        ms ,me, uid = ly_common.GetSessionROI(sourcetext)
+    else: # to the end
         break
 conn.commit()
 print 'Succeed'
-
-
