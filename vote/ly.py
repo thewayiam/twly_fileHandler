@@ -10,17 +10,15 @@ def FileLog(session):
     c.execute('''INSERT into legislator_filelog(session,date)
         SELECT %s,%s
         WHERE NOT EXISTS (SELECT session FROM legislator_filelog WHERE session = %s) RETURNING id''',(session,datetime.now(),session))
-def MakeLegislatorList(name,session):
-    c.execute('''INSERT into legislator_legislator(name,enable,"enableSession",hits)
-        SELECT %s,true,%s,%s
-        WHERE NOT EXISTS (SELECT name,enable,"enableSession",hits FROM legislator_legislator WHERE name = %s)''',(name,session,0,name))
-    c.execute('''SELECT id FROM legislator_legislator WHERE name = %s''',[name])
+def GetLegislatorId(name):
+    name_like = name + '%'
+    c.execute('''SELECT uid FROM legislator_legislator WHERE name like %s''',[name_like])
     return c.fetchone()[0]
-def AddAttendanceRecord(LegislatorID,date,sessionPrd,session,PresentNum,UnpresentNum):
-    c.execute('''INSERT into legislator_attendance(legislator_id,date,"sessionPrd",session,category,"presentNum","unpresentNum")
-        SELECT %s,%s,%s,%s,0,%s,%s
-        WHERE NOT EXISTS (SELECT legislator_id,date,"sessionPrd",session,category,"presentNum","unpresentNum" FROM legislator_attendance WHERE legislator_id = %s AND session = %s)''',(LegislatorID,date,sessionPrd,session,PresentNum,UnpresentNum,LegislatorID,session))  
-def FindName(text,sessionPrd,session,beginStr,endStr):
+def AddAttendanceRecord(LegislatorID,date,ad,session,sitting,PresentNum,UnpresentNum):
+    c.execute('''INSERT into legislator_attendance(legislator_id,date,ad,session,sitting,category,"presentNum","unpresentNum")
+        SELECT %s,%s,%s,%s,%s,0,%s,%s
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_attendance WHERE legislator_id = %s AND sitting = %s)''',(LegislatorID,date,ad,session,sitting,PresentNum,UnpresentNum,LegislatorID,sitting))
+def FindName(text,ad,session,sitting,beginStr,endStr):
     date = ly_common.GetDate(text)
     begin = text.find(beginStr)
     end = text.find(endStr)
@@ -37,15 +35,15 @@ def FindName(text,sessionPrd,session,beginStr,endStr):
             e = firstName + e
             firstName = ''
         #
-        LegislatorID = MakeLegislatorList(e,session)
+        LegislatorID = GetLegislatorId(e)
         if beginStr == u"出席委員":
-            AddAttendanceRecord(LegislatorID,date,sessionPrd,session,1,0)
+            AddAttendanceRecord(LegislatorID,date,ad,session,sitting,1,0)
         if beginStr == u"請假委員":
-            AddAttendanceRecord(LegislatorID,date,sessionPrd,session,0,1)
+            AddAttendanceRecord(LegislatorID,date,ad,session,sitting,0,1)
     return            
 conn = db_ly.con()
 c = conn.cursor()
-sourcetext = codecs.open(u"立院議事錄08_01_03.txt", "r", "utf-8").read()
+sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()
 ms , me = ly_common.GetSessionROI(sourcetext)
 while ms:
     session = ms.group()
@@ -55,8 +53,8 @@ while ms:
         singleSessionText = sourcetext[:me.start()+1]
     else:
         singleSessionText = sourcetext                 
-    FindName(singleSessionText,ms.group(1),session,u"出席委員",u"委員出席")
-    FindName(singleSessionText,ms.group(1),session,u"請假委員",u"委員請假")
+    FindName(singleSessionText,ms.group('ad'),ms.group('session'),ms.group(1),u"出席委員",u"委員出席")
+    FindName(singleSessionText,ms.group('ad'),ms.group('session'),ms.group(1),u"請假委員",u"委員請假")
     if me:
         sourcetext = sourcetext[me.start()+1:]
         ms , me = ly_common.GetSessionROI(sourcetext)

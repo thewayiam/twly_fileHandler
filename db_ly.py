@@ -5,7 +5,7 @@ from psycopg2.extras import Json
 
 def con():
     psycopg2.extensions.register_adapter(dict, Json)
-    conn = psycopg2.connect(dbname='ly_dev', host='localhost', user='postgres' , password='P@ssw0rd')         
+    conn = psycopg2.connect(dbname='ly_dev', host='localhost', user='postgres' , password='postgres')
     return conn
 
 
