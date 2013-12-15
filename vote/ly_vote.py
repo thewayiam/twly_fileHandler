@@ -10,26 +10,45 @@ import db_ly
 import ly_common
 
 
-def AddVote(sitting_id, vote_seq, content):
-    c.execute('''INSERT into vote_vote(sitting_id, vote_seq, content, hits, likes, dislikes) 
-        SELECT %s, %s, %s, 0, 0, 0
-        WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE sitting_id = %s AND vote_seq = %s ) RETURNING id''',(sitting_id, vote_seq, content, sitting_id, vote_seq))  
-    r = c.fetchone()
-    if r:
-        return r[0]
-def GetVote(text):
-    l = text.split()
-    i = -2
-    if re.search(u'(附後\S[\d]+\S)', l[-2]):
-        return l[-1]
-    if re.search(u'[：:]$',l[-2]):
-        return '\n'.join(l[-2:])
+def InsertVote(uid, sitting_id, vote_seq, content):
+    c.execute('''INSERT into vote_vote(uid, sitting_id, vote_seq, content, hits, likes, dislikes) 
+        SELECT %s, %s, %s, %s, 0, 0, 0
+        WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE uid = %s )''',(uid, sitting_id, vote_seq, content, uid))  
 
-def MakeVoteRelation(legislator_id,vote_id,decision):
-    c.execute('''INSERT into vote_legislator_vote(legislator_id,vote_id,decision)
-        SELECT %s,%s,%s
-        WHERE NOT EXISTS (SELECT legislator_id,vote_id,decision FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id,vote_id,decision,legislator_id,vote_id))  
-def LiterateVoter(c, text,vote_id,decision):
+def GetVoteContent(c, vote_seq, text):
+    l = text.split()
+    if re.search(u'附後\S[\d]+\S', l[-2]) or re.search(u'^(其他事項|討論事項)$', l[-2]):
+        return l[-1]
+    if re.search(u'[：:]$',l[-2]) or re.search(u'(公決|照案|議案)[\S]{0,3}$',l[-2]) or re.search(u'^(決議|決定)[：:]',l[-1]) :
+        return '\n'.join(l[-2:])
+    if re.search(u'[：:]$',l[-3]) :
+        return '\n'.join(l[-3:])
+    i = -3
+    # 法條修正提案列表類
+    if ly_common.GetLegislatorId(c, l[-2]) or ly_common.GetLegislatorId(c, l[-3]) or re.search(u'(案|審查)[\S]{0,3}$',l[-2]):
+        while not re.search(u'(通過|附表|如下)[\S]{1,2}$', l[i]):
+            i -= 1
+        return '\n'.join(l[i:])
+    # 剩下的先向上找上一個附後，找兩附後之間以冒號作結，如找不到
+    if vote_seq != '001':
+        while not re.search(u'附後\S[\d]+\S', l[i]):
+            i -= 1
+        for line in reversed(range(i-1,-3)):
+            if re.search(u'[：:]$', l[line]):
+                return '\n'.join(l[line:])
+        return '\n'.join(l[i+1:])
+    # 最後方法
+    if re.search(u'^[\S]{1,5}在場委員', l[-1]):
+        return '\n'.join(l[-2:])
+    else:
+        return l[-1]
+    print l[-1]
+def MakeVoteRelation(legislator_id, vote_id, decision):
+    c.execute('''INSERT into vote_legislator_vote(legislator_id, vote_id, decision)
+        SELECT %s, %s, %s
+        WHERE NOT EXISTS (SELECT 1 FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id, vote_id, decision, legislator_id, vote_id))  
+
+def LiterateVoter(c, text, vote_id, decision):
     firstName = ''
     for name in text.split():      
         #--> 兩個字的立委中文名字中間有空白
@@ -42,49 +61,48 @@ def LiterateVoter(c, text,vote_id,decision):
         #<--
         legislator_id = ly_common.GetLegislatorId(c, name)
         if legislator_id:
-            MakeVoteRelation(legislator_id,vote_id,decision)
+            MakeVoteRelation(legislator_id, vote_id, decision)
         else:
             break
-def IterVote(c, text, uid):
-    print uid
+
+def IterVote(c, text, sitting_id):
+    print sitting_id
     match, vote_id = None, None
     mvoter = re.search(u'記名(投票)?表決結果名單[:：]', text) 
     if mvoter:
         votertext = text[mvoter.end():]
         for match in re.finditer(u'附後[（(】。](?P<vote_seq>[\d]+)?', text):
-            if match.group('vote_seq'):
-                vote_seq = '%02d' % int(match.group('vote_seq'))
-            else:
-                vote_seq = '01'
             mapprove , mreject , mquit = re.search(u'贊成者[:：][\d]+人', votertext) , re.search(u'反對者[:：][\d]+人', votertext) , re.search(u'棄權者[:：][\d]+人', votertext)        
-            #l = text[:match.end()-1].split()
-            #if re.search(u'(附後\S(\d){1,3}\S)', l[-2]) or re.search(u'草案[」](。)?$', l[-2]) or len(l[-2]) < 10:
-            #   if mquit:
-            #       votertext = votertext[mquit.end():]
-            #   continue
-            content = GetVote(text[:match.end()-1])
+            if match.group('vote_seq'):
+                vote_seq = '%03d' % int(match.group('vote_seq'))
+            else:
+                vote_seq = '001'
+            uid = '%s-%s' % (sitting_id, vote_seq)
+            content = GetVoteContent(c, vote_seq, text[:match.start()+2])
             if content:
-                vote_id = AddVote(uid, vote_seq, content)
-            if vote_id:
+                InsertVote(uid, sitting_id, vote_seq, content)
+            if uid:
                 if not mapprove:
                     print u'==找不到贊成者==\n' ,votertext
                 else:
-                    LiterateVoter(c, votertext[mapprove.end():], vote_id, 1)
+                    LiterateVoter(c, votertext[mapprove.end():], uid, 1)
                 if not mreject:
                     print u'==找不到反對者==\n' ,votertext
                 else:
-                    LiterateVoter(c, votertext[mreject.end():], vote_id, -1)
+                    LiterateVoter(c, votertext[mreject.end():], uid, -1)
                 if not mquit:
                     print u'==找不到棄權者==\n' ,votertext
                 else:
-                    LiterateVoter(c, votertext[mquit.end():], vote_id, 0)
+                    LiterateVoter(c, votertext[mquit.end():], uid, 0)
             votertext = votertext[mquit.end():]
         if not match:
             print u'有記名表決結果名單無附後'
     else:
         print u'無記名表決結果名單'
+
 conn = db_ly.con()
 c = conn.cursor()
+ad = 8
 sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()
 ms ,me, uid = ly_common.GetSessionROI(sourcetext)
 while ms:
@@ -99,30 +117,34 @@ while ms:
     ms ,me, uid = ly_common.GetSessionROI(sourcetext)
 conn.commit()
 # --> conscience vote
-def party_Decision_List(party):
+def party_Decision_List(party, ad):
     c.execute('''select vote_id,avg(decision) from vote_legislator_vote
-    where legislator_id in (select id from legislator_legislator where party=%s)
-    group by vote_id''',(party,))
+    where decision is not null and legislator_id in (select legislator_id from legislator_legislatordetail where party=%s and ad=%s)
+    group by vote_id''',(party, ad))
     return c.fetchall()
-def personal_Decision_List(party,Vote_id):
+def personal_Decision_List(party, vote_id, ad):
     c.execute('''select legislator_id,decision from vote_legislator_vote
-    where legislator_id in (select id from legislator_legislator where party=%s) and vote_id = %s''',(party,Vote_id))
+    where decision is not null and legislator_id in (select legislator_id from legislator_legislatordetail where party=%s and ad=%s) and vote_id = %s''',(party, ad, vote_id))
     return c.fetchall()
-def party_List():
-    c.execute('''select distinct(party) from legislator_legislator''')
+def party_List(ad):
+    c.execute('''select distinct(party) from legislator_legislatordetail where ad=%s''', (ad, ))
     return c.fetchall()
-def conflict_vote(vote_id):
-    c.execute('''update vote_vote set conflict=True where id=%s''',(vote_id,))
-def conflict_legislator_vote(legislator_id,vote_id):
-    c.execute('''update vote_legislator_vote set conflict=True where legislator_id=%s and vote_id=%s''',(legislator_id,vote_id))
-for party in party_List():
-    if party != u'無':
-        for v in party_Decision_List(party):
+def conflict_vote(conflict, vote_id):
+    c.execute('''update vote_vote set conflict=%s where uid=%s''',(conflict, vote_id))
+def conflict_legislator_vote(conflict, legislator_id, vote_id):
+    c.execute('''update vote_legislator_vote set conflict=%s where legislator_id=%s and vote_id=%s''',(conflict, legislator_id,vote_id))
+for party in party_List(ad):
+    if party != u'無黨籍':
+        for v in party_Decision_List(party, ad):
             if int(v[1]) != v[1]:
-                conflict_vote(v[0])
-                for p in personal_Decision_List(party,v[0]):
+                conflict_vote(True, v[0])
+                for p in personal_Decision_List(party, v[0], ad):
                     if p[1]*v[1] <= 0:
-                        conflict_legislator_vote(p[0],v[0])      
+                        conflict_legislator_vote(True, p[0], v[0])
+                    else:
+                        conflict_legislator_vote(None, p[0], v[0])
+            else:
+                conflict_vote(None, v[0])
 conn.commit()
 # <-- conscience vote
 
