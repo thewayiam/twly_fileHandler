@@ -11,6 +11,10 @@ import ly_common
 
 
 def InsertVote(uid, sitting_id, vote_seq, content):
+    c.execute('''UPDATE vote_vote
+        SET content = %s, conflict = null
+        WHERE uid = %s''', (content, uid)
+    )
     c.execute('''INSERT into vote_vote(uid, sitting_id, vote_seq, content, hits, likes, dislikes) 
         SELECT %s, %s, %s, %s, 0, 0, 0
         WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE uid = %s )''',(uid, sitting_id, vote_seq, content, uid))  
@@ -43,7 +47,12 @@ def GetVoteContent(c, vote_seq, text):
     else:
         return l[-1]
     print l[-1]
+
 def MakeVoteRelation(legislator_id, vote_id, decision):
+    c.execute('''UPDATE vote_legislator_vote
+        SET decision = %s, conflict = null
+        WHERE legislator_id = %s AND vote_id = %s''', (decision, legislator_id, vote_id)
+    )
     c.execute('''INSERT into vote_legislator_vote(legislator_id, vote_id, decision)
         SELECT %s, %s, %s
         WHERE NOT EXISTS (SELECT 1 FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id, vote_id, decision, legislator_id, vote_id))  
@@ -116,65 +125,84 @@ while ms:
     sourcetext = sourcetext[me.start()+1:]
     ms ,me, uid = ly_common.GetSessionROI(sourcetext)
 conn.commit()
+
 # --> conscience vote
 def party_Decision_List(party, ad):
-    c.execute('''select vote_id,avg(decision) from vote_legislator_vote
-    where decision is not null and legislator_id in (select legislator_id from legislator_legislatordetail where party=%s and ad=%s)
-    group by vote_id''',(party, ad))
+    c.execute('''select vote_id, avg(decision) 
+            from vote_legislator_vote
+            where decision is not null and legislator_id in
+            (select legislator_id from legislator_legislatordetail where party = %s and ad = %s)
+            group by vote_id''', (party, ad)
+    )
     return c.fetchall()
+
 def personal_Decision_List(party, vote_id, ad):
-    c.execute('''select legislator_id,decision from vote_legislator_vote
-    where decision is not null and legislator_id in (select legislator_id from legislator_legislatordetail where party=%s and ad=%s) and vote_id = %s''',(party, ad, vote_id))
+    c.execute('''select legislator_id, decision 
+            from vote_legislator_vote
+            where decision is not null and vote_id = %s and legislator_id in
+            (select legislator_id from legislator_legislatordetail where party = %s and ad = %s)''', (vote_id, party, ad)
+    )
     return c.fetchall()
+
 def party_List(ad):
-    c.execute('''select distinct(party) from legislator_legislatordetail where ad=%s''', (ad, ))
+    c.execute('''select distinct(party) 
+            from legislator_legislatordetail 
+            where ad=%s''', (ad, )
+    )
     return c.fetchall()
+
 def conflict_vote(conflict, vote_id):
-    c.execute('''update vote_vote set conflict=%s where uid=%s''',(conflict, vote_id))
+    c.execute('''update vote_vote 
+            set conflict=%s 
+            where uid=%s''', (conflict, vote_id)
+    )
+
 def conflict_legislator_vote(conflict, legislator_id, vote_id):
-    c.execute('''update vote_legislator_vote set conflict=%s where legislator_id=%s and vote_id=%s''',(conflict, legislator_id,vote_id))
+    c.execute('''update vote_legislator_vote 
+            set conflict=%s
+            where legislator_id=%s and vote_id=%s''', (conflict, legislator_id, vote_id)
+    )
+
 for party in party_List(ad):
     if party != u'無黨籍':
-        for v in party_Decision_List(party, ad):
-            if int(v[1]) != v[1]:
-                conflict_vote(True, v[0])
-                for p in personal_Decision_List(party, v[0], ad):
-                    if p[1]*v[1] <= 0:
-                        conflict_legislator_vote(True, p[0], v[0])
-                    else:
-                        conflict_legislator_vote(None, p[0], v[0])
-            else:
-                conflict_vote(None, v[0])
+        for vote_id, avg_decision in party_Decision_List(party, ad):
+            # 黨的decision平均值如不為整數，表示該表決有人脫黨投票
+            if int(avg_decision) != avg_decision:
+                conflict_vote(True, vote_id)
+                # 同黨各立委的decision與黨的decision平均值相乘如小於(相反票)等於(棄權票)零，表示脫黨投票
+                for legislator_id, personal_decision in personal_Decision_List(party, vote_id, ad):
+                    if personal_decision*avg_decision <= 0:
+                        conflict_legislator_vote(True, legislator_id, vote_id)
 conn.commit()
 # <-- conscience vote
 
 # --> not voting
 def vote_list():
-    c.execute('''select id, date from vote_vote''')
+    c.execute('''select vote.uid, sitting.date 
+            from vote_vote vote, sittings_sittings sitting
+            where vote.sitting_id = sitting.uid'''
+    )
     return c.fetchall()
-def not_voting_legislator_list(vote_id,vote_date):
-    c.execute('''select id
-                from legislator_legislator
-                where term_start <= %s and
-                    term_end > %s and
-                    id not in (select legislator_id
-                    from vote_legislator_vote 
-                    where vote_id = %s)''',(vote_date,vote_date,vote_id))
+
+def not_voting_legislator_list(vote_id, vote_date):
+    c.execute('''select legislator_id
+            from legislator_legislatordetail
+            where term_start <= %s and cast(term_end::json->>'date' as date) > %s and id not in
+            (select legislator_id from vote_legislator_vote where vote_id = %s)''', (vote_date, vote_date, vote_id))
     return c.fetchall()
-def insert_not_voting_record(legislator_id,vote_id):
-    c.execute('''INSERT into vote_legislator_vote(legislator_id,vote_id)
+
+def insert_not_voting_record(legislator_id, vote_id):
+    c.execute('''INSERT into vote_legislator_vote(legislator_id, vote_id)
         SELECT %s,%s
-        WHERE NOT EXISTS (SELECT legislator_id,vote_id FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id,vote_id,legislator_id,vote_id))   
+        WHERE NOT EXISTS (SELECT legislator_id, vote_id FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''', (legislator_id, vote_id, legislator_id, vote_id))   
+
 for vote_id, vote_date in vote_list():
-    for legislator_id in not_voting_legislator_list(vote_id,vote_date):
+    for legislator_id in not_voting_legislator_list(vote_id, vote_date):
         insert_not_voting_record(legislator_id, vote_id)
 conn.commit()
 # <-- not voting end
 
 # --> vote result
 
-
 # <-- vote result end
 print 'Succeed'
-
-

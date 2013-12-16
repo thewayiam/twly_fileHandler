@@ -19,8 +19,8 @@ def Legislator(legislator):
         WHERE NOT EXISTS (SELECT 1 FROM legislator_legislator WHERE uid = %(uid)s)''', complement
     )
 
-def LegislatorDetail(uid, term):
-    complement = {"uid":uid, "gender":'', "party":'', "caucus":'', "contacts":None, "term_start":None, "term_end":None, "education":None, "experience":None, "remark":None, "image":'', "links":None}
+def LegislatorDetail(uid, term, ideal_term_end_year):
+    complement = {"uid":uid, "gender":'', "party":'', "caucus":'', "contacts":None, "term_start":None, "term_end":{"date": '%04d-01-31' % int(ideal_term_end_year)}, "education":None, "experience":None, "remark":None, "image":'', "links":None}
     complement.update(term)
     c.execute('''UPDATE legislator_legislatordetail
         SET name = %(name)s, gender = %(gender)s, party = %(party)s, caucus = %(caucus)s, constituency = %(constituency)s, in_office = %(in_office)s, contacts = %(contacts)s, term_start = %(term_start)s, term_end = %(term_end)s, education = %(education)s, experience = %(experience)s, remark = %(remark)s, image = %(image)s, links = %(links)s
@@ -56,10 +56,11 @@ c = conn.cursor()
 
 f = codecs.open('no_committees.txt','w', encoding='utf-8')
 dict_list = json.load(open('merged.json'))
+ideal_term_end_year = {"1":1993, "2":1996, "3":1999, "4":2002, "5":2005, "6":2008, "7":2012, "8":2016}
 for legislator in dict_list:
     Legislator(legislator)
     for term in legislator["each_term"]:
-        LegislatorDetail(legislator["uid"], term)
+        LegislatorDetail(legislator["uid"], term, ideal_term_end_year[str(term["ad"])])
         if term.get("committees"):
             Committees(term["committees"])
             for committee in term["committees"]:
