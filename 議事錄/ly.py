@@ -45,7 +45,7 @@ def FindName(text,sessionPrd,session,beginStr,endStr):
     return            
 conn = db_ly.con()
 c = conn.cursor()
-sourcetext = codecs.open(u"立院議事錄08_01_03.txt", "r", "utf-8").read()
+sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()
 ms , me = ly_common.GetSessionROI(sourcetext)
 while ms:
     session = ms.group()

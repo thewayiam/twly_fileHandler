@@ -74,7 +74,7 @@ def GetProposer(text):
 def GetProposal(text):
     l = text.rstrip().split('\n')
     i = -2
-    while re.search(u'(?<!通過|同意|辦理|保留|處理)[？?。」】!！]$',l[i].rstrip()):   # (?<!通過|同意|辦理|保留):不是這些關鍵字+標點符號作結的為提案內容
+    while re.search(u'(?<!通過|同意|辦理|保留|處理)[？?。」】!！]$',l[i].rstrip()) and re.search(u'^(?!決議[：:])',l[i].lstrip()):   # (?<!通過|同意|辦理|保留):不是這些關鍵字+標點符號作結的為提案內容
         l[i] = l[i].strip()
         i -= 1
     if i == -2:
@@ -83,7 +83,7 @@ def GetProposal(text):
         if re.search(u'說明[：:]$',l[i].rstrip()):
             return ('\n'.join(l[i-1:])).lstrip()
         else:
-            return ('\n'.join(l[i:])).lstrip()
+            return ('\n'.join(l[i:])).lstrip()       
     else:
         return ('\n'.join(l[i+1:])).lstrip()
 def AddAttendanceRecord(LegislatorID,date,sessionPrd,session,PresentNum,UnpresentNum):

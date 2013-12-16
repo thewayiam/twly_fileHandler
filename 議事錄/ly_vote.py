@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys # 正常模組
+import sys 
 sys.path.append('../')
 import re,codecs,psycopg2
 import db_ly,ly_common
@@ -10,9 +10,9 @@ def LyID(name):
     c.execute('''SELECT id FROM legislator_legislator WHERE name = %s''',[name])
     return c.rowcount,c.fetchone()
 def AddVote(content,date,session):
-    c.execute('''INSERT into vote_vote(content,date,session,hits) 
-        SELECT %s,%s,%s,%s
-        WHERE NOT EXISTS (SELECT content,date,session,hits FROM vote_vote WHERE content = %s ) RETURNING id''',(content,date,session,0,content))  
+    c.execute('''INSERT into vote_vote(content,date,session,hits,likes,dislikes) 
+        SELECT %s,%s,%s,0,0,0
+        WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE content = %s ) RETURNING id''',(content,date,session,content))  
     r = c.fetchone()
     if r:
         return r[0]
@@ -28,7 +28,7 @@ def GetVote(text):
 def MakeVoteRelation(legislator_id,vote_id,decision):
     c.execute('''INSERT into vote_legislator_vote(legislator_id,vote_id,decision)
         SELECT %s,%s,%s
-        WHERE NOT EXISTS (SELECT legislator_id,vote_id,decision FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id,vote_id,decision,legislator_id,vote_id))  
+        WHERE NOT EXISTS (SELECT 1 FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id,vote_id,decision,legislator_id,vote_id))  
 def LiterateVoter(text,vote_id,decision):
     firstName = ''
     for name in text.split():      
@@ -78,9 +78,10 @@ def IterVote(text,date,session):
             print '有記名表決結果名單無附後'
     else:
         print '無記名表決結果名單'
+        
 conn = db_ly.con()
 c = conn.cursor()
-sourcetext = codecs.open(u"立院議事錄08_01_03.txt", "r", "utf-8").read()
+sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()
 ms , me = ly_common.GetSessionROI(sourcetext)
 while ms:
     if me:
@@ -99,31 +100,62 @@ while ms:
     sourcetext = sourcetext[me.start()+1:]
     ms , me = ly_common.GetSessionROI(sourcetext)
 conn.commit()
+# --> conscience vote
 def party_Decision_List(party):
     c.execute('''select vote_id,avg(decision) from vote_legislator_vote
-    where legislator_id in (select id from legislator_legislator where party=%s)
+    where decision is not null and legislator_id in (select id from legislator_legislator where party=%s)
     group by vote_id''',(party,))
     return c.fetchall()
 def personal_Decision_List(party,Vote_id):
     c.execute('''select legislator_id,decision from vote_legislator_vote
-    where legislator_id in (select id from legislator_legislator where party=%s) and vote_id = %s''',(party,Vote_id))
+    where decision is not null and legislator_id in (select id from legislator_legislator where party=%s) and vote_id = %s''',(party,Vote_id))
     return c.fetchall()
 def party_List():
     c.execute('''select distinct(party) from legislator_legislator''')
     return c.fetchall()
-def conflict_vote(vote_id):
-    c.execute('''update vote_vote set conflict=True where id=%s''',(vote_id,))
-def conflict_legislator_vote(legislator_id,vote_id):
-    c.execute('''update vote_legislator_vote set conflict=True where legislator_id=%s and vote_id=%s''',(legislator_id,vote_id))
+def conflict_vote(conflict, vote_id):
+    c.execute('''update vote_vote set conflict=%s where id=%s''',(conflict, vote_id))
+def conflict_legislator_vote(conflict, legislator_id,vote_id):
+    c.execute('''update vote_legislator_vote set conflict=%s where legislator_id=%s and vote_id=%s''',(conflict, legislator_id,vote_id))
 for party in party_List():
     if party != u'無':
         for v in party_Decision_List(party):
             if int(v[1]) != v[1]:
-                conflict_vote(v[0])
+                conflict_vote(True, v[0])
                 for p in personal_Decision_List(party,v[0]):
                     if p[1]*v[1] <= 0:
-                        conflict_legislator_vote(p[0],v[0])      
-conn.commit()        
+                        conflict_legislator_vote(True, p[0], v[0])
+                       
+conn.commit()
+# <-- conscience vote
+
+# --> not voting
+def vote_list():
+    c.execute('''select id, date from vote_vote''')
+    return c.fetchall()
+def not_voting_legislator_list(vote_id,vote_date):
+    c.execute('''select id
+                from legislator_legislator
+                where term_start <= %s and
+                    term_end > %s and
+                    id not in (select legislator_id
+                    from vote_legislator_vote 
+                    where vote_id = %s)''',(vote_date,vote_date,vote_id))
+    return c.fetchall()
+def insert_not_voting_record(legislator_id,vote_id):
+    c.execute('''INSERT into vote_legislator_vote(legislator_id,vote_id)
+        SELECT %s,%s
+        WHERE NOT EXISTS (SELECT legislator_id,vote_id FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id,vote_id,legislator_id,vote_id))   
+for vote_id, vote_date in vote_list():
+    for legislator_id in not_voting_legislator_list(vote_id,vote_date):
+        insert_not_voting_record(legislator_id, vote_id)
+conn.commit()
+# <-- not voting end
+
+# --> vote result
+
+
+# <-- vote result end
 print 'Succeed'
 
 
