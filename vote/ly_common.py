@@ -8,9 +8,10 @@ from datetime import datetime
 def GetSessionROI(text):
     ms ,me, uid = re.search(u'立法院(第(?P<ad>[\d]+)屆第(?P<session>[\d]+)會期第(?P<times>[\d]+)次(臨時會第(?P<temptimes>[\d]+)次)?會議)議事錄',text) , None, None
     if ms:
-        uid = '%02d-%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('times')))
         if ms.group('temptimes'):
-            uid = uid + '-T-%02d' % int(ms.group('temptimes'))
+            uid = '%02d-%02dT%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('temptimes')), int(ms.group('times')))
+        else:
+            uid = '%02d-%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('times')))
         me = re.search(u'立法院第(\d){1,2}屆第[\d]{1,2}會期第[\d]{1,2}次(臨時會第\d次)?會議議事錄',text[1:])     
     return ms ,me, uid
 

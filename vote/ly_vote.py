@@ -127,6 +127,7 @@ while ms:
 conn.commit()
 
 # --> conscience vote
+print u'Conscience vote processing...'
 def party_Decision_List(party, ad):
     c.execute('''select vote_id, avg(decision) 
             from vote_legislator_vote
@@ -174,9 +175,11 @@ for party in party_List(ad):
                     if personal_decision*avg_decision <= 0:
                         conflict_legislator_vote(True, legislator_id, vote_id)
 conn.commit()
+print 'done!\n'
 # <-- conscience vote
 
 # --> not voting
+print u'Not voting processing...'
 def vote_list():
     c.execute('''select vote.uid, sitting.date 
             from vote_vote vote, sittings_sittings sitting
@@ -200,6 +203,7 @@ for vote_id, vote_date in vote_list():
     for legislator_id in not_voting_legislator_list(vote_id, vote_date):
         insert_not_voting_record(legislator_id, vote_id)
 conn.commit()
+print 'done!\n'
 # <-- not voting end
 
 # --> vote result
