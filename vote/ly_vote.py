@@ -12,12 +12,12 @@ import ly_common
 
 def InsertVote(uid, sitting_id, vote_seq, content):
     c.execute('''UPDATE vote_vote
-        SET content = %s, conflict = null
-        WHERE uid = %s''', (content, uid)
+            SET content = %s, conflict = null
+            WHERE uid = %s''', (content, uid)
     )
     c.execute('''INSERT into vote_vote(uid, sitting_id, vote_seq, content, hits, likes, dislikes) 
-        SELECT %s, %s, %s, %s, 0, 0, 0
-        WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE uid = %s )''',(uid, sitting_id, vote_seq, content, uid))  
+            SELECT %s, %s, %s, %s, 0, 0, 0
+            WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE uid = %s )''',(uid, sitting_id, vote_seq, content, uid))  
 
 def GetVoteContent(c, vote_seq, text):
     l = text.split()
@@ -50,12 +50,12 @@ def GetVoteContent(c, vote_seq, text):
 
 def MakeVoteRelation(legislator_id, vote_id, decision):
     c.execute('''UPDATE vote_legislator_vote
-        SET decision = %s, conflict = null
-        WHERE legislator_id = %s AND vote_id = %s''', (decision, legislator_id, vote_id)
+            SET decision = %s, conflict = null
+            WHERE legislator_id = %s AND vote_id = %s''', (decision, legislator_id, vote_id)
     )
     c.execute('''INSERT into vote_legislator_vote(legislator_id, vote_id, decision)
-        SELECT %s, %s, %s
-        WHERE NOT EXISTS (SELECT 1 FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id, vote_id, decision, legislator_id, vote_id))  
+            SELECT %s, %s, %s
+            WHERE NOT EXISTS (SELECT 1 FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id, vote_id, decision, legislator_id, vote_id))  
 
 def LiterateVoter(c, text, vote_id, decision):
     firstName = ''
@@ -114,7 +114,7 @@ c = conn.cursor()
 ad = 8
 sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()
 ms ,me, uid = ly_common.GetSessionROI(sourcetext)
-while ms:
+while ms and 0:
     if me:
         singleSessionText = sourcetext[ms.start():me.start()+1]
     else: # last session
@@ -175,11 +175,11 @@ for party in party_List(ad):
                     if personal_decision*avg_decision <= 0:
                         conflict_legislator_vote(True, legislator_id, vote_id)
 conn.commit()
-print 'done!\n'
+print 'done!'
 # <-- conscience vote
 
-# --> not voting
-print u'Not voting processing...'
+# --> not voting & vote results
+print u'Not voting & vote results processing...'
 def vote_list():
     c.execute('''select vote.uid, sitting.date 
             from vote_vote vote, sittings_sittings sitting
@@ -190,23 +190,40 @@ def vote_list():
 def not_voting_legislator_list(vote_id, vote_date):
     c.execute('''select legislator_id
             from legislator_legislatordetail
-            where term_start <= %s and cast(term_end::json->>'date' as date) > %s and id not in
+            where term_start <= %s and cast(term_end::json->>'date' as date) > %s and legislator_id not in
             (select legislator_id from vote_legislator_vote where vote_id = %s)''', (vote_date, vote_date, vote_id))
     return c.fetchall()
 
 def insert_not_voting_record(legislator_id, vote_id):
     c.execute('''INSERT into vote_legislator_vote(legislator_id, vote_id)
-        SELECT %s,%s
-        WHERE NOT EXISTS (SELECT legislator_id, vote_id FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''', (legislator_id, vote_id, legislator_id, vote_id))   
+            SELECT %s,%s
+            WHERE NOT EXISTS (SELECT legislator_id, vote_id FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''', (legislator_id, vote_id, legislator_id, vote_id))   
+
+def get_vote_results(vote_id):
+    c.execute('''select 
+                    count(*) total,
+                    sum(case when decision isnull then 1 else 0 end) not_voting,
+                    sum(case when decision = 1 then 1 else 0 end) agree,
+                    sum(case when decision = 0 then 1 else 0 end) abstain,    
+                    sum(case when decision = -1 then 1 else 0 end) disagree
+                from vote_legislator_vote
+                where vote_id = %s''', (vote_id,)
+    )
+    return [desc[0] for desc in c.description], c.fetchone() # return column name and value
+
+def update_vote_results(uid, results):
+    c.execute('''UPDATE vote_vote
+            SET results = %s
+            WHERE uid = %s''', (results, uid)
+    )
 
 for vote_id, vote_date in vote_list():
     for legislator_id in not_voting_legislator_list(vote_id, vote_date):
         insert_not_voting_record(legislator_id, vote_id)
+    key, value = get_vote_results(vote_id)
+    update_vote_results(vote_id, dict(zip(key, value)))
 conn.commit()
-print 'done!\n'
-# <-- not voting end
+print 'done!'
+# <-- not voting & vote results end
 
-# --> vote result
-
-# <-- vote result end
 print 'Succeed'
