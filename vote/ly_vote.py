@@ -10,6 +10,16 @@ import db_ly
 import ly_common
 
 
+def GetSessionROI(text):
+    ms ,me, uid = re.search(u'立法院(第(?P<ad>[\d]+)屆第(?P<session>[\d]+)會期第(?P<times>[\d]+)次(臨時會第(?P<temptimes>[\d]+)次)?會議)議事錄',text) , None, None
+    if ms:
+        if ms.group('temptimes'):
+            uid = '%02d-%02dT%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('times')), int(ms.group('temptimes')))
+        else:
+            uid = '%02d-%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('times')))
+        me = re.search(u'立法院第(\d){1,2}屆第[\d]{1,2}會期第[\d]{1,2}次(臨時會第\d次)?會議議事錄', text[1:])     
+    return ms ,me, uid
+
 def InsertVote(uid, sitting_id, vote_seq, content):
     c.execute('''UPDATE vote_vote
             SET content = %s, conflict = null
@@ -113,8 +123,14 @@ conn = db_ly.con()
 c = conn.cursor()
 ad = 8
 sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()
-ms ,me, uid = ly_common.GetSessionROI(sourcetext)
-while ms and 0:
+ms ,me, uid = GetSessionROI(sourcetext)
+while ms:
+    print ms.group(1) 
+    sitting_dict = {"uid":uid, "name": ms.group(1), "ad": ms.group('ad'), "date": ly_common.GetDate(sourcetext), "session": ms.group('session') }
+    ly_common.InsertSitting(c, sitting_dict)
+    ly_common.FileLog(c, ms.group(1))
+    ly_common.Attendance(c, sitting_dict, sourcetext, u'出席委員', 0, 'present')    
+    ly_common.Attendance(c, sitting_dict, sourcetext, u'請假委員', 0, 'absent')    
     if me:
         singleSessionText = sourcetext[ms.start():me.start()+1]
     else: # last session
@@ -123,7 +139,7 @@ while ms and 0:
         break
     IterVote(c, singleSessionText, uid)         
     sourcetext = sourcetext[me.start()+1:]
-    ms ,me, uid = ly_common.GetSessionROI(sourcetext)
+    ms ,me, uid = GetSessionROI(sourcetext)
 conn.commit()
 
 # --> conscience vote
