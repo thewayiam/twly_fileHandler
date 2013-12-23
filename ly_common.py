@@ -19,7 +19,13 @@ def GetDate(text):
 
 def GetLegislatorId(c, name):
     name_like = name + '%'
-    c.execute('''SELECT uid FROM legislator_legislator WHERE name like %s''',[name_like])
+    c.execute('''SELECT uid FROM legislator_legislator WHERE name like %s''', (name_like, ))
+    r = c.fetchone()
+    if r:
+        return r[0]
+
+def GetLegislatorDetailId(c, legislator_id, ad):
+    c.execute('''SELECT id FROM legislator_legislatordetail WHERE legislator_id = %s and ad = %s''',(legislator_id, ad))
     r = c.fetchone()
     if r:
         return r[0]
@@ -54,6 +60,7 @@ def Attendance(c, sitting_dict, text, keyword, category, status):
     match = re.search(keyword, text)
     if match:
         for legislator_id in GetLegislatorIdList(c, text[match.end():]):
+            legislator_id = GetLegislatorDetailId(c, legislator_id, sitting_dict["ad"])
             AddAttendanceRecord(c, legislator_id, sitting_dict["uid"], category, status)
 
 def InsertSitting(c, sitting_dict):

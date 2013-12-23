@@ -37,7 +37,6 @@ no committees!!, uid: 460, name: 陳瑞斌, ad: 1
 no committees!!, uid: 461, name: 馬須鈴, ad: 1
 no committees!!, uid: 503, name: 劉英若, ad: 1
 no committees!!, uid: 511, name: 張海清, ad: 1
-no committees!!, uid: 588, name: 謝長廷, ad: 3
 no committees!!, uid: 594, name: 黃信介, ad: 1
 no committees!!, uid: 1200, name: 洪炎秋, ad: 1
 no committees!!, uid: 1245, name: 許世賢, ad: 1

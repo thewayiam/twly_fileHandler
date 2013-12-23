@@ -67,7 +67,7 @@ def MakeVoteRelation(legislator_id, vote_id, decision):
             SELECT %s, %s, %s
             WHERE NOT EXISTS (SELECT 1 FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)''',(legislator_id, vote_id, decision, legislator_id, vote_id))  
 
-def LiterateVoter(c, text, vote_id, decision):
+def LiterateVoter(c, sitting_dict, text, vote_id, decision):
     firstName = ''
     for name in text.split():      
         #--> 兩個字的立委中文名字中間有空白
@@ -80,11 +80,13 @@ def LiterateVoter(c, text, vote_id, decision):
         #<--
         legislator_id = ly_common.GetLegislatorId(c, name)
         if legislator_id:
+            legislator_id = ly_common.GetLegislatorDetailId(c, legislator_id, sitting_dict["ad"])
             MakeVoteRelation(legislator_id, vote_id, decision)
         else:
             break
 
-def IterVote(c, text, sitting_id):
+def IterVote(c, text, sitting_dict):
+    sitting_id = sitting_dict["uid"]
     print sitting_id
     match, vote_id = None, None
     mvoter = re.search(u'記名(投票)?表決結果名單[:：]', text) 
@@ -96,23 +98,23 @@ def IterVote(c, text, sitting_id):
                 vote_seq = '%03d' % int(match.group('vote_seq'))
             else:
                 vote_seq = '001'
-            uid = '%s-%s' % (sitting_id, vote_seq)
+            vote_id = '%s-%s' % (sitting_id, vote_seq)
             content = GetVoteContent(c, vote_seq, text[:match.start()+2])
             if content:
-                InsertVote(uid, sitting_id, vote_seq, content)
-            if uid:
+                InsertVote(vote_id, sitting_id, vote_seq, content)
+            if vote_id:
                 if not mapprove:
                     print u'==找不到贊成者==\n' ,votertext
                 else:
-                    LiterateVoter(c, votertext[mapprove.end():], uid, 1)
+                    LiterateVoter(c, sitting_dict, votertext[mapprove.end():], vote_id, 1)
                 if not mreject:
                     print u'==找不到反對者==\n' ,votertext
                 else:
-                    LiterateVoter(c, votertext[mreject.end():], uid, -1)
+                    LiterateVoter(c, sitting_dict, votertext[mreject.end():], vote_id, -1)
                 if not mquit:
                     print u'==找不到棄權者==\n' ,votertext
                 else:
-                    LiterateVoter(c, votertext[mquit.end():], uid, 0)
+                    LiterateVoter(c, sitting_dict, votertext[mquit.end():], vote_id, 0)
             votertext = votertext[mquit.end():]
         if not match:
             print u'有記名表決結果名單無附後'
@@ -129,15 +131,15 @@ while ms:
     sitting_dict = {"uid":uid, "name": ms.group(1), "ad": ms.group('ad'), "date": ly_common.GetDate(sourcetext), "session": ms.group('session') }
     ly_common.InsertSitting(c, sitting_dict)
     ly_common.FileLog(c, ms.group(1))
-    ly_common.Attendance(c, sitting_dict, sourcetext, u'出席委員', 0, 'present')    
-    ly_common.Attendance(c, sitting_dict, sourcetext, u'請假委員', 0, 'absent')    
+    ly_common.Attendance(c, sitting_dict, sourcetext, u'出席委員[:：]?', 'YS', 'present')    
+    ly_common.Attendance(c, sitting_dict, sourcetext, u'請假委員[:：]?', 'YS', 'absent')    
     if me:
         singleSessionText = sourcetext[ms.start():me.start()+1]
     else: # last session
         singleSessionText = sourcetext
-        IterVote(c, singleSessionText, uid)
+        IterVote(c, singleSessionText, sitting_dict)
         break
-    IterVote(c, singleSessionText, uid)         
+    IterVote(c, singleSessionText, sitting_dict)         
     sourcetext = sourcetext[me.start()+1:]
     ms ,me, uid = GetSessionROI(sourcetext)
 conn.commit()
@@ -148,7 +150,7 @@ def party_Decision_List(party, ad):
     c.execute('''select vote_id, avg(decision) 
             from vote_legislator_vote
             where decision is not null and legislator_id in
-            (select legislator_id from legislator_legislatordetail where party = %s and ad = %s)
+            (select id from legislator_legislatordetail where party = %s and ad = %s)
             group by vote_id''', (party, ad)
     )
     return c.fetchall()
@@ -157,7 +159,7 @@ def personal_Decision_List(party, vote_id, ad):
     c.execute('''select legislator_id, decision 
             from vote_legislator_vote
             where decision is not null and vote_id = %s and legislator_id in
-            (select legislator_id from legislator_legislatordetail where party = %s and ad = %s)''', (vote_id, party, ad)
+            (select id from legislator_legislatordetail where party = %s and ad = %s)''', (vote_id, party, ad)
     )
     return c.fetchall()
 
@@ -197,17 +199,17 @@ print 'done!'
 # --> not voting & vote results
 print u'Not voting & vote results processing...'
 def vote_list():
-    c.execute('''select vote.uid, sitting.date 
+    c.execute('''select vote.uid, sitting.ad, sitting.date 
             from vote_vote vote, sittings_sittings sitting
             where vote.sitting_id = sitting.uid'''
     )
     return c.fetchall()
 
-def not_voting_legislator_list(vote_id, vote_date):
-    c.execute('''select legislator_id
+def not_voting_legislator_list(vote_id, vote_ad, vote_date):
+    c.execute('''select id
             from legislator_legislatordetail
-            where term_start <= %s and cast(term_end::json->>'date' as date) > %s and legislator_id not in
-            (select legislator_id from vote_legislator_vote where vote_id = %s)''', (vote_date, vote_date, vote_id))
+            where ad = %s and term_start <= %s and cast(term_end::json->>'date' as date) > %s and id not in
+            (select legislator_id from vote_legislator_vote where vote_id = %s)''', (vote_ad, vote_date, vote_date, vote_id))
     return c.fetchall()
 
 def insert_not_voting_record(legislator_id, vote_id):
@@ -233,8 +235,8 @@ def update_vote_results(uid, results):
             WHERE uid = %s''', (results, uid)
     )
 
-for vote_id, vote_date in vote_list():
-    for legislator_id in not_voting_legislator_list(vote_id, vote_date):
+for vote_id, vote_ad, vote_date in vote_list():
+    for legislator_id in not_voting_legislator_list(vote_id, vote_ad, vote_date):
         insert_not_voting_record(legislator_id, vote_id)
     key, value = get_vote_results(vote_id)
     update_vote_results(vote_id, dict(zip(key, value)))

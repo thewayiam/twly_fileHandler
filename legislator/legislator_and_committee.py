@@ -7,6 +7,8 @@ import codecs
 import psycopg2
 import json
 import db_ly
+import ly_common
+
 
 def Legislator(legislator):
     complement = {"former_names":''}
@@ -32,7 +34,7 @@ def LegislatorDetail(uid, term, ideal_term_end_year):
     )
     c.execute('''INSERT into legislator_legislatordetail(legislator_id, ad, name, gender, party, caucus, constituency, county, in_office, contacts, term_start, term_end, education, experience, remark, image, links, hits)
         SELECT %(uid)s, %(ad)s, %(name)s, %(gender)s, %(party)s, %(caucus)s, %(constituency)s, %(county)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s, 0
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislatordetail WHERE legislator_id = %(uid)s and ad = %(ad)s )''', complement
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislatordetail WHERE legislator_id = %(uid)s and ad = %(ad)s ) RETURNING id''', complement
     )
  
 def Committees(committees):
@@ -47,8 +49,8 @@ def Legislator_Committees(legislator_id, committee):
     complement = {"legislator_id":legislator_id, "committee_id":committee_id}
     complement.update(committee)
     c.execute('''UPDATE committees_legislator_committees
-        SET committee_id = %(committee_id)s, chair = %(chair)s
-        WHERE legislator_id = %(legislator_id)s and ad = %(ad)s and session = %(session)s''', complement
+        SET chair = %(chair)s
+        WHERE legislator_id = %(legislator_id)s and committee_id = %(committee_id)s and ad = %(ad)s and session = %(session)s''', complement
     )
     c.execute('''INSERT INTO committees_legislator_committees(legislator_id, committee_id, ad, session, chair)
         SELECT %(legislator_id)s, %(committee_id)s, %(ad)s, %(session)s, %(chair)s
@@ -65,10 +67,11 @@ for legislator in dict_list:
     Legislator(legislator)
     for term in legislator["each_term"]:
         LegislatorDetail(legislator["uid"], term, ideal_term_end_year[str(term["ad"])])
-        if term.get("committees"):
+        legislator_id = ly_common.GetLegislatorDetailId(c, legislator["uid"], term["ad"])
+        if term.has_key("committees"):
             Committees(term["committees"])
             for committee in term["committees"]:
-                Legislator_Committees(legislator["uid"], committee)
+                Legislator_Committees(legislator_id, committee)
         else:
             f.write('no committees!!, uid: %s, name: %s, ad: %s\n' % (legislator["uid"], term["name"], term["ad"]))
 f.close()
