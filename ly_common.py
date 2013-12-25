@@ -64,8 +64,13 @@ def Attendance(c, sitting_dict, text, keyword, category, status):
             AddAttendanceRecord(c, legislator_id, sitting_dict["uid"], category, status)
 
 def InsertSitting(c, sitting_dict):
-    complement = {"committee":''}
+    complement = {"committee":'', "name":''}
     complement.update(sitting_dict)
+    c.execute('''UPDATE sittings_sittings
+            SET name = %(name)s, date = %(date)s, ad = %(ad)s, session = %(session)s, committee = %(committee)s
+            WHERE uid = %(uid)s''', complement
+    )
     c.execute('''INSERT into sittings_sittings(uid, name, date, ad, session, committee)
-        SELECT %(uid)s, %(name)s, %(date)s, %(ad)s, %(session)s, %(committee)s
-        WHERE NOT EXISTS (SELECT 1 FROM sittings_sittings WHERE uid = %(uid)s )''', complement)
+            SELECT %(uid)s, %(name)s, %(date)s, %(ad)s, %(session)s, %(committee)s
+            WHERE NOT EXISTS (SELECT 1 FROM sittings_sittings WHERE uid = %(uid)s )''', complement
+    )
