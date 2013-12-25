@@ -44,17 +44,15 @@ def Committees(committees):
     )
 
 def Legislator_Committees(legislator_id, committee):
-    c.execute("SELECT id FROM committees_committees WHERE name = %(name)s", committee)
-    committee_id = c.fetchone()[0]
-    complement = {"legislator_id":legislator_id, "committee_id":committee_id}
+    complement = {"legislator_id":legislator_id}
     complement.update(committee)
     c.execute('''UPDATE committees_legislator_committees
         SET chair = %(chair)s
-        WHERE legislator_id = %(legislator_id)s and committee_id = %(committee_id)s and ad = %(ad)s and session = %(session)s''', complement
+        WHERE legislator_id = %(legislator_id)s and committee_id = %(name)s and ad = %(ad)s and session = %(session)s''', complement
     )
     c.execute('''INSERT INTO committees_legislator_committees(legislator_id, committee_id, ad, session, chair)
-        SELECT %(legislator_id)s, %(committee_id)s, %(ad)s, %(session)s, %(chair)s
-        WHERE NOT EXISTS (SELECT 1 FROM committees_legislator_committees WHERE legislator_id = %(legislator_id)s and committee_id = %(committee_id)s and ad = %(ad)s and session = %(session)s )''', complement
+        SELECT %(legislator_id)s, %(name)s, %(ad)s, %(session)s, %(chair)s
+        WHERE NOT EXISTS (SELECT 1 FROM committees_legislator_committees WHERE legislator_id = %(legislator_id)s and committee_id = %(name)s and ad = %(ad)s and session = %(session)s )''', complement
     )
    
 conn = db_ly.con()
