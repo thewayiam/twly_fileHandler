@@ -12,8 +12,8 @@ import ly_common
 
 
 def Bill(bill):
-    c.execute('''INSERT into bill_bill(uid, abstract, summary, bill_type, doc, proposed_by, sitting_introduced) 
-            SELECT %(bill_ref)s, %(abstract)s, %(summary)s, %(bill_type)s, %(doc)s, %(proposed_by)s, %(sitting_introduced)s 
+    c.execute('''INSERT into bill_bill(uid, api_bill_id, abstract, summary, bill_type, doc, proposed_by, sitting_introduced) 
+            SELECT %(bill_ref)s, %(bill_id)s, %(abstract)s, %(summary)s, %(bill_type)s, %(doc)s, %(proposed_by)s, %(sitting_introduced)s 
             WHERE NOT EXISTS (SELECT 1 FROM bill_bill WHERE uid = %(bill_ref)s)''', bill
     )  
 

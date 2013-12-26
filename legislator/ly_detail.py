@@ -1,9 +1,13 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys # 正常模組
+import sys
 sys.path.append('../')
-import re,codecs,psycopg2
+import re
+import codecs
+import psycopg2
+import json
 import db_ly
+import ly_common
 
 def GetdistrictDetail(text,eleDistrict,name):
     ms, me = re.search(eleDistrict,text) , re.search(name,text)
