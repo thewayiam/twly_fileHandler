@@ -7,10 +7,10 @@ import db_ly
 import ly_common
 
 
-def LegislatorDetail(legislator_id, district_detail):
+def LegislatorDetail(legislator_id, district):
     c.execute('''UPDATE legislator_legislatordetail
-            SET district_detail = %s
-            WHERE id = %s''', (district_detail, legislator_id)
+            SET district = %s
+            WHERE id = %s''', (district, legislator_id)
     )
 
 conn = db_ly.con()
