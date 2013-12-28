@@ -12,21 +12,29 @@ File handler of http://twly.herokuapp.com/
     ./legislator$ python legislator_and_committee.py：
     ./legislator$ python distrcit_detail.py：
 ```
+
 	建立主表後：		
     ●法條修正草案		
+
 ```
 	./bill$ python crawler.py		
 	./bill$ python parser.py		
 ```
+
     ●立院表決紀錄，立院出缺席紀錄		
+
 ```
 	./vote$ python vote.py		
 ```
+
 	●立委在委員會的臨時提案、附帶決議紀錄		
+
 ```
     ./proposal$ python proposal.py
 ```
+
 	●政見		
+
 ```
     ./platform$ python platform.py
 ```
