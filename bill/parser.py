@@ -11,6 +11,13 @@ import db_ly
 import ly_common
 
 
+def BillExist(bill_ref):
+    c.execute('''SELECT uid
+            FROM bill_bill
+            WHERE uid = %s''', (bill_ref,)
+    )  
+    return c.fetchone()
+
 def Bill(bill):
     c.execute('''INSERT into bill_bill(uid, api_bill_id, abstract, summary, bill_type, doc, proposed_by, sitting_introduced) 
             SELECT %(bill_ref)s, %(bill_id)s, %(abstract)s, %(summary)s, %(bill_type)s, %(doc)s, %(proposed_by)s, %(sitting_introduced)s 
@@ -29,10 +36,15 @@ def BillMotions(motion):
         WHERE NOT EXISTS (SELECT 1 FROM bill_billmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)''', motion
     ) 
 
+def ttsMotions(motion):
+    c.execute('''INSERT into bill_ttsmotions(bill_id, sitting_id, agencies, category, chair, date, memo, motion_type, progress, resolution, source, speakers, summary, tags, topic, tts_key)
+        SELECT %(bill_id)s, %(sitting_id)s, %(agencies)s, %(category)s, %(chair)s, %(date)s, %(memo)s, %(motion_type)s, %(progress)s, %(resolution)s, %(source)s, %(speakers)s, %(summary)s, %(tags)s, %(topic)s, %(tts_key)s 
+        WHERE NOT EXISTS (SELECT 1 FROM bill_ttsmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)''', motion
+    ) 
+
 conn = db_ly.con()
 c = conn.cursor()
 
-#f = codecs.open('no_committees.txt','w', encoding='utf-8')
 dict_list = json.load(open('lyapi_bills.json'))
 for bill in dict_list['entries']:
     if not bill['bill_ref'] or not re.search(u'L', bill['bill_ref']):
@@ -49,13 +61,29 @@ for bill in dict_list['entries']:
     for proposal_type in ['sponsors', 'cosponsors']:
         if bill.get(proposal_type):
             for legislator in bill[proposal_type]:
-                print legislator
                 legislator_id = ly_common.GetLegislatorId(c, legislator)
                 if legislator_id:
                     legislator_id = ly_common.GetLegislatorDetailId(c, legislator_id, 8)
                     LegislatorBill(legislator_id, bill['bill_ref'], priproposer, petition)
                 priproposer = False
             petition = True
-#f.close()
 conn.commit()
+print 'bills done'
+
+f = codecs.open('bills_not_found_in_misq.txt','w', encoding='utf-8')
+dict_list = json.load(open('lyapi_ttsmotions.json'))
+for motion in dict_list['entries']:
+    if not motion['bill_refs']:
+        continue
+    #print json.dumps(motion, sort_keys=True, indent=4, ensure_ascii=False)
+    for bill_ref in motion['bill_refs']:
+        if re.search(u'L', bill_ref):
+            if BillExist(bill_ref):
+                motion.update({"bill_id": bill_ref})
+                ttsMotions(motion)
+            else:
+                f.write('not found in lyapi_bills:, %s\n' % bill_ref)
+f.close()
+conn.commit()
+print 'billmotions done'
 print 'Succeed'
