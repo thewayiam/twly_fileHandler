@@ -70,7 +70,7 @@ for bill in dict_list['entries']:
 conn.commit()
 print 'bills done'
 
-f = codecs.open('bills_not_found_in_misq.txt','w', encoding='utf-8')
+f = codecs.open('bills_not_found_in_lyapi_bills.txt','w', encoding='utf-8')
 dict_list = json.load(open('lyapi_ttsmotions.json'))
 for motion in dict_list['entries']:
     if not motion['bill_refs']:
