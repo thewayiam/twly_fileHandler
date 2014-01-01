@@ -82,8 +82,24 @@ for motion in dict_list['entries']:
                 motion.update({"bill_id": bill_ref})
                 ttsMotions(motion)
             else:
-                f.write('not found in lyapi_bills:, %s\n' % bill_ref)
+                f.write('not found in lyapi_bills:, %s, %s\n' % (bill_ref, motion['tts_key']))
 f.close()
 conn.commit()
 print 'billmotions done'
+
+c.execute('''select t.date, t.progress, t.bill_id
+        from bill_ttsmotions t
+        inner join (
+            select bill_id, max(date) as MaxDate
+            from bill_ttsmotions
+            group by bill_id
+        ) tm on t.bill_id = tm.bill_id and t.date = tm.MaxDate'''
+)
+response = c.fetchall()
+c.executemany('''UPDATE bill_bill
+        SET last_action_at = %s, last_action = %s
+        WHERE uid = %s''', response
+)  
+conn.commit()
+print 'last action information of bill done'
 print 'Succeed'
