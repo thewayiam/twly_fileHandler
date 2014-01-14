@@ -5,24 +5,33 @@ sys.path.append('../')
 import re
 import codecs
 import psycopg2
+from psycopg2.extras import Json
 import json
 import db_ly
 import ly_common
 
 
 def Legislator(legislator):
-    complement = {"former_names":''}
-    complement.update(legislator)
+    if legislator.has_key('former_names'):
+        legislator['former_names'] = '\n'.join(legislator['former_names'])
+    else:
+        legislator.update({'former_names': ''})
     c.execute('''UPDATE legislator_legislator
         SET name = %(name)s, former_names = %(former_names)s
-        WHERE uid = %(uid)s''', complement
+        WHERE uid = %(uid)s''', legislator
     )
     c.execute('''INSERT INTO legislator_legislator(uid, name, former_names)
         SELECT %(uid)s, %(name)s, %(former_names)s
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislator WHERE uid = %(uid)s)''', complement
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislator WHERE uid = %(uid)s)''', legislator
     )
 
 def LegislatorDetail(uid, term, ideal_term_end_year):
+    if term.has_key('education'):
+        term['education'] = '\n'.join(term['education'])
+    if term.has_key('experience'):
+        term['experience'] = '\n'.join(term['experience'])
+    if term.has_key('remark'):
+        term['remark'] = '\n'.join(term['remark'])
     complement = {"uid":uid, "gender":'', "party":'', "caucus":'', "contacts":None, "county":term['constituency'], "district":'',  "term_start":None, "term_end":{"date": '%04d-01-31' % int(ideal_term_end_year)}, "education":None, "experience":None, "remark":None, "image":'', "links":None}
     match = re.search(u'(?P<county>[\W]{1,2}(縣|市))', term['constituency'])
     if match:
@@ -36,7 +45,7 @@ def LegislatorDetail(uid, term, ideal_term_end_year):
         SELECT %(uid)s, %(ad)s, %(name)s, %(gender)s, %(party)s, %(caucus)s, %(constituency)s, %(county)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s, 0
         WHERE NOT EXISTS (SELECT 1 FROM legislator_legislatordetail WHERE legislator_id = %(uid)s and ad = %(ad)s ) RETURNING id''', complement
     )
- 
+
 def Committees(committees):
     c.executemany('''INSERT INTO committees_committees(name)
         SELECT %(name)s

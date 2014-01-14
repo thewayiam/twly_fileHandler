@@ -32,14 +32,14 @@ def LegislatorBill(legislator_id, bill_id, priproposer, petition):
 
 def BillMotions(motion):
     c.execute('''INSERT into bill_billmotions(bill_id, sitting_id, agenda_item, committee, item, motion_class, resolution, status)
-        SELECT %(bill_id)s, %(sitting_id)s, %(agenda_item)s, %(committee)s, %(item)s, %(motion_class)s, %(resolution)s, %(status)s 
-        WHERE NOT EXISTS (SELECT 1 FROM bill_billmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)''', motion
+            SELECT %(bill_id)s, %(sitting_id)s, %(agenda_item)s, %(committee)s, %(item)s, %(motion_class)s, %(resolution)s, %(status)s 
+            WHERE NOT EXISTS (SELECT 1 FROM bill_billmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)''', motion
     ) 
 
 def ttsMotions(motion):
-    c.execute('''INSERT into bill_ttsmotions(bill_id, sitting_id, agencies, category, chair, date, memo, motion_type, progress, resolution, source, speakers, summary, tags, topic, tts_key)
-        SELECT %(bill_id)s, %(sitting_id)s, %(agencies)s, %(category)s, %(chair)s, %(date)s, %(memo)s, %(motion_type)s, %(progress)s, %(resolution)s, %(source)s, %(speakers)s, %(summary)s, %(tags)s, %(topic)s, %(tts_key)s 
-        WHERE NOT EXISTS (SELECT 1 FROM bill_ttsmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)''', motion
+    c.execute('''INSERT into bill_ttsmotions(bill_id, sitting_id, agencies, category, chair, date, memo, motion_type, progress, resolution, summary, tags, topic, tts_key)
+            SELECT %(bill_id)s, %(sitting_id)s, %(agencies)s, %(category)s, %(chair)s, %(date)s, %(memo)s, %(motion_type)s, %(progress)s, %(resolution)s, %(summary)s, %(tags)s, %(topic)s, %(tts_key)s 
+            WHERE NOT EXISTS (SELECT 1 FROM bill_ttsmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)''', motion
     ) 
 
 conn = db_ly.con()
@@ -75,7 +75,7 @@ dict_list = json.load(open('lyapi_ttsmotions.json'))
 for motion in dict_list['entries']:
     if not motion['bill_refs']:
         continue
-    #print json.dumps(motion, sort_keys=True, indent=4, ensure_ascii=False)
+    print json.dumps(motion, sort_keys=True, indent=4, ensure_ascii=False)
     for bill_ref in motion['bill_refs']:
         if re.search(u'L', bill_ref):
             if BillExist(bill_ref):

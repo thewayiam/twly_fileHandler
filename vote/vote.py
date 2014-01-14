@@ -21,10 +21,10 @@ def GetSessionROI(text):
     return ms ,me, uid
 
 def InsertVote(uid, sitting_id, vote_seq, content):
-    c.execute('''UPDATE vote_vote
-            SET content = %s, conflict = null
-            WHERE uid = %s''', (content, uid)
-    )
+    #c.execute('''UPDATE vote_vote
+    #        SET content = %s, conflict = null
+    #        WHERE uid = %s''', (content, uid)
+    #)
     c.execute('''INSERT into vote_vote(uid, sitting_id, vote_seq, content, hits, likes, dislikes) 
             SELECT %s, %s, %s, %s, 0, 0, 0
             WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE uid = %s )''',(uid, sitting_id, vote_seq, content, uid))  

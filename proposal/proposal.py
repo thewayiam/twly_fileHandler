@@ -52,14 +52,14 @@ def GetContent(text):
         l[i] = l[i].strip()
         i -= 1
     if i == -2:
-        return l[-1]
+        return l[-1].lstrip()
     if re.search(u'[：:]$',l[i].rstrip()):
         if re.search(u'說明[：:]$',l[i]):
-            return ('\n'.join(l[i-1:]))
+            return ('\n'.join(l[i-1:])).lstrip()
         else:
-            return ('\n'.join(l[i:]))       
+            return ('\n'.join(l[i:])).lstrip()       
     else:
-        return ('\n'.join(l[i+1:]))
+        return ('\n'.join(l[i+1:])).lstrip()
 
 conn = db_ly.con()
 c = conn.cursor()

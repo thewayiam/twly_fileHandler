@@ -1,48 +1,51 @@
-not found in lyapi_bills:, 1722L15837
-not found in lyapi_bills:, 1043L15641
-not found in lyapi_bills:, 1150L15640
-not found in lyapi_bills:, 775L15482之一
-not found in lyapi_bills:, 1722L15138之1
-not found in lyapi_bills:, 1545L15320
-not found in lyapi_bills:, 1545L13223
-not found in lyapi_bills:, 1557L15073之一
-not found in lyapi_bills:, 246L13560
-not found in lyapi_bills:, 1544L13095
-not found in lyapi_bills:, 246L13560
-not found in lyapi_bills:, 1353L15137
-not found in lyapi_bills:, 870L14048
-not found in lyapi_bills:, 246L13560
-not found in lyapi_bills:, 1061L3062
-not found in lyapi_bills:, L13278
-not found in lyapi_bills:, 1544L13095
-not found in lyapi_bills:, 246L13560
-not found in lyapi_bills:, 246L13560
-not found in lyapi_bills:, 9L14624號
-not found in lyapi_bills:, 23L14608之1
-not found in lyapi_bills:, 246L1461
-not found in lyapi_bills:, 618L13424
-not found in lyapi_bills:, 1545L13223
-not found in lyapi_bills:, 618L13424
-not found in lyapi_bills:, 270L14596
-not found in lyapi_bills:, 23L員14009
-not found in lyapi_bills:, 1545L13223
-not found in lyapi_bills:, 618L13424
-not found in lyapi_bills:, 870L14048
-not found in lyapi_bills:, 1545L13223
-not found in lyapi_bills:, 1462L13818
-not found in lyapi_bills:, 225L13494
-not found in lyapi_bills:, 159L3094
-not found in lyapi_bills:, 225L13494
-not found in lyapi_bills:, 1044L13108
-not found in lyapi_bills:, 1679 L13310
-not found in lyapi_bills:, 246L13560
-not found in lyapi_bills:, 1711L16575
-not found in lyapi_bills:, 1044L13108
-not found in lyapi_bills:, 756L9549
-not found in lyapi_bills:, 23L1355423委13554
-not found in lyapi_bills:, 225L13494
-not found in lyapi_bills:, 1044L13108
-not found in lyapi_bills:, 1044L13108
-not found in lyapi_bills:, 1545L13223
-not found in lyapi_bills:, 468L130003
-not found in lyapi_bills:, 1722L12998
+not found in lyapi_bills:, 1581L13531之二, 17692:345
+not found in lyapi_bills:, 407L13900之二, 17692:346
+not found in lyapi_bills:, 1650L14440之ㄧ, 17692:347
+not found in lyapi_bills:, 1722L15837, 17667:317
+not found in lyapi_bills:, 1043L15641, 17584:243
+not found in lyapi_bills:, 1150L15640, 17584:245
+not found in lyapi_bills:, 775L15482之一, 17562:188
+not found in lyapi_bills:, 1722L15138之1, 17562:189
+not found in lyapi_bills:, 1545L15320, 17542:109
+not found in lyapi_bills:, 1545L13223, 17588:002
+not found in lyapi_bills:, 1557L15073之一, 17469:150
+not found in lyapi_bills:, 246L13560, 17387:004
+not found in lyapi_bills:, 1544L13095, 17427:002
+not found in lyapi_bills:, 246L13560, 17392:001
+not found in lyapi_bills:, 1353L15137, 17367:158
+not found in lyapi_bills:, 870L14048, 17416:002
+not found in lyapi_bills:, 246L13560, 17301:002
+not found in lyapi_bills:, 1061L3062, 17266:148
+not found in lyapi_bills:, L13278, 17284:001
+not found in lyapi_bills:, 1544L13095, 17288:001
+not found in lyapi_bills:, 246L13560, 17213:001
+not found in lyapi_bills:, 246L13560, 17212:002
+not found in lyapi_bills:, 9L14624號, 17142:144
+not found in lyapi_bills:, 23L14608之1, 17125:128
+not found in lyapi_bills:, 246L1461, 17080:105
+not found in lyapi_bills:, 618L13424, 17081:006
+not found in lyapi_bills:, 1545L13223, 17108:001
+not found in lyapi_bills:, 618L13424, 17056:005
+not found in lyapi_bills:, 270L14596, 17056:131
+not found in lyapi_bills:, 23L員14009, 17056:134
+not found in lyapi_bills:, 1545L13223, 17089:002
+not found in lyapi_bills:, 618L13424, 17099:001
+not found in lyapi_bills:, 870L14048, 16812:131
+not found in lyapi_bills:, 1545L13223, 16838:003
+not found in lyapi_bills:, 1462L13818, 16717:170
+not found in lyapi_bills:, 225L13494, 16712:004
+not found in lyapi_bills:, 159L3094, 17097:001
+not found in lyapi_bills:, 225L13494, 16688:002
+not found in lyapi_bills:, 1044L13108, 16662:002
+not found in lyapi_bills:, 1679 L13310, 16662:002
+not found in lyapi_bills:, 246L13560, 16605:104
+not found in lyapi_bills:, 1711L16575, 16605:153
+not found in lyapi_bills:, 1044L13108, 16605:177
+not found in lyapi_bills:, 756L9549, 16605:319
+not found in lyapi_bills:, 23L1355423委13554, 16588:024
+not found in lyapi_bills:, 225L13494, 16587:130
+not found in lyapi_bills:, 1044L13108, 16603:003
+not found in lyapi_bills:, 1044L13108, 16503:131
+not found in lyapi_bills:, 1545L13223, 16503:192
+not found in lyapi_bills:, 468L130003, 16436:126
+not found in lyapi_bills:, 1722L12998, 16436:145
