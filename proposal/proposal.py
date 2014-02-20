@@ -36,7 +36,20 @@ def InsertUpdateLegislatorProposal(legislator_id, proposal_id, priproposer):
     ''', (legislator_id, proposal_id, priproposer, legislator_id, proposal_id))
 
 def GetSession(text):
-    ms, me, uid = re.search(u'立法院(第(?P<ad>[\d]+)屆第(?P<session>[\d]+)會期(第(?P<temptimes>[\d]+)次臨時會)?(?P<committee>[\W\s]{2,39})(兩|三|四|五|六|七|八)?委員會[\s]*第(?P<times>[\d]+)次(全體委員|聯席)會議)議事錄', text), re.search(u'散[\s]*會', text), None
+    ms, me, uid = re.search(u'''
+        立法院
+        (?P<name>
+            第(?P<ad>[\d]+)屆
+            第(?P<session>[\d]+)會期
+            (第(?P<temptimes>[\d]+)次臨時會)?
+            (?P<committee>[\W\s]{2,50})
+            [兩三四五六七八]?委員會
+            [\s]*
+            第(?P<times>[\d]+)次
+            (全體委員|聯席)會議
+        )
+        議事錄
+    ''', text, re.X), re.search(u'散[\s]*會', text), None
     if ms:
         ms.group('committee').split(u'、')
         if ms.group('temptimes'):
@@ -74,8 +87,8 @@ for f in files:
     text = codecs.open(f, "r", "utf-8").read()
     ms ,me, uid = GetSession(text)
     while ms and me:
-        sitting_dict = {"uid": uid, "name": re.sub(u'[\s]', '', ms.group(1)), "date": ly_common.GetDate(text), "ad": ms.group('ad'), "session": ms.group('session'), "committee": ms.group('committee') }
-        print sitting_dict.get("name")
+        sitting_dict = {"uid": uid, "name": re.sub(u'[\s]', '', ms.group('name')), "date": ly_common.GetDate(text), "ad": ms.group('ad'), "session": ms.group('session'), "committee": ms.group('committee') }
+        print '\n' + sitting_dict.get("name")
         ly_common.InsertSitting(c, sitting_dict)
         singleSession = text[ms.start():me.end()]
         filelogid = ly_common.FileLog(c, sitting_dict.get("name"))

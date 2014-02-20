@@ -11,7 +11,17 @@ import ly_common
 
 
 def GetSessionROI(text):
-    ms ,me, uid = re.search(u'立法院(第(?P<ad>[\d]+)屆第(?P<session>[\d]+)會期第(?P<times>[\d]+)次(臨時會第(?P<temptimes>[\d]+)次)?會議)議事錄', text) , None, None
+    ms ,me, uid = re.search(u'''
+        立法院
+        (?P<name>
+            第(?P<ad>[\d]+)屆
+            第(?P<session>[\d]+)會期
+            第(?P<times>[\d]+)次
+            (臨時會第(?P<temptimes>[\d]+)次)?
+            會議
+        )
+        議事錄
+    ''', text, re.X) , None, None
     if ms:
         if ms.group('temptimes'):
             uid = '%02d-%02dT%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('times')), int(ms.group('temptimes')))
@@ -133,10 +143,10 @@ ad = 8
 sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()
 ms ,me, uid = GetSessionROI(sourcetext)
 while ms:
-    print ms.group(1)
-    sitting_dict = {"uid":uid, "name": ms.group(1), "ad": ms.group('ad'), "date": ly_common.GetDate(sourcetext), "session": ms.group('session') }
+    print '\n' + ms.group('name')
+    sitting_dict = {"uid":uid, "name": ms.group('name'), "ad": ms.group('ad'), "date": ly_common.GetDate(sourcetext), "session": ms.group('session') }
     ly_common.InsertSitting(c, sitting_dict)
-    ly_common.FileLog(c, ms.group(1))
+    ly_common.FileLog(c, ms.group('name'))
     ly_common.Attendance(c, sitting_dict, sourcetext, u'出席委員[:：]?', 'YS', 'present')
     ly_common.Attendance(c, sitting_dict, sourcetext, u'請假委員[:：]?', 'YS', 'absent')
     if me:
