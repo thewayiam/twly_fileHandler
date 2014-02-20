@@ -12,35 +12,39 @@ import ly_common
 
 
 def BillExist(bill_ref):
-    c.execute('''SELECT uid
-            FROM bill_bill
-            WHERE uid = %s''', (bill_ref,)
-    )  
+    c.execute('''
+        SELECT uid
+        FROM bill_bill
+        WHERE uid = %s
+    ''', (bill_ref,))
     return c.fetchone()
 
 def Bill(bill):
-    c.execute('''INSERT into bill_bill(uid, api_bill_id, abstract, summary, bill_type, doc, proposed_by, sitting_introduced) 
-            SELECT %(bill_ref)s, %(bill_id)s, %(abstract)s, %(summary)s, %(bill_type)s, %(doc)s, %(proposed_by)s, %(sitting_introduced)s 
-            WHERE NOT EXISTS (SELECT 1 FROM bill_bill WHERE uid = %(bill_ref)s)''', bill
-    )  
+    c.execute('''
+        INSERT into bill_bill(uid, api_bill_id, abstract, summary, bill_type, doc, proposed_by, sitting_introduced)
+        SELECT %(bill_ref)s, %(bill_id)s, %(abstract)s, %(summary)s, %(bill_type)s, %(doc)s, %(proposed_by)s, %(sitting_introduced)s
+        WHERE NOT EXISTS (SELECT 1 FROM bill_bill WHERE uid = %(bill_ref)s)
+    ''', bill)
 
 def LegislatorBill(legislator_id, bill_id, priproposer, petition):
-    c.execute('''INSERT into bill_legislator_bill(legislator_id, bill_id, priproposer, petition)
-            SELECT %s, %s, %s, %s
-            WHERE NOT EXISTS (SELECT 1 FROM bill_legislator_bill WHERE legislator_id = %s AND bill_id = %s)''', (legislator_id, bill_id, priproposer, petition, legislator_id, bill_id)
-    )      
+    c.execute('''
+        INSERT into bill_legislator_bill(legislator_id, bill_id, priproposer, petition)
+        SELECT %s, %s, %s, %s
+        WHERE NOT EXISTS (SELECT 1 FROM bill_legislator_bill WHERE legislator_id = %s AND bill_id = %s)
+    ''', (legislator_id, bill_id, priproposer, petition, legislator_id, bill_id))
 
 def BillMotions(motion):
-    c.execute('''INSERT into bill_billmotions(bill_id, sitting_id, agenda_item, committee, item, motion_class, resolution, status)
-            SELECT %(bill_id)s, %(sitting_id)s, %(agenda_item)s, %(committee)s, %(item)s, %(motion_class)s, %(resolution)s, %(status)s 
-            WHERE NOT EXISTS (SELECT 1 FROM bill_billmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)''', motion
-    ) 
+    c.execute('''
+        INSERT into bill_billmotions(bill_id, sitting_id, agenda_item, committee, item, motion_class, resolution, status)           SELECT %(bill_id)s, %(sitting_id)s, %(agenda_item)s, %(committee)s, %(item)s, %(motion_class)s, %(resolution)s, %(status)s
+        WHERE NOT EXISTS (SELECT 1 FROM bill_billmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)
+    ''', motion)
 
 def ttsMotions(motion):
-    c.execute('''INSERT into bill_ttsmotions(bill_id, sitting_id, agencies, category, chair, date, memo, motion_type, progress, resolution, summary, tags, topic, tts_key)
-            SELECT %(bill_id)s, %(sitting_id)s, %(agencies)s, %(category)s, %(chair)s, %(date)s, %(memo)s, %(motion_type)s, %(progress)s, %(resolution)s, %(summary)s, %(tags)s, %(topic)s, %(tts_key)s 
-            WHERE NOT EXISTS (SELECT 1 FROM bill_ttsmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)''', motion
-    ) 
+    c.execute('''
+        INSERT into bill_ttsmotions(bill_id, sitting_id, agencies, category, chair, date, memo, motion_type, progress, resolution, summary, tags, topic, tts_key)
+        SELECT %(bill_id)s, %(sitting_id)s, %(agencies)s, %(category)s, %(chair)s, %(date)s, %(memo)s, %(motion_type)s, %(progress)s, %(resolution)s, %(summary)s, %(tags)s, %(topic)s, %(tts_key)s
+        WHERE NOT EXISTS (SELECT 1 FROM bill_ttsmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)
+    ''', motion)
 
 conn = db_ly.con()
 c = conn.cursor()
@@ -70,7 +74,7 @@ for bill in dict_list['entries']:
 conn.commit()
 print 'bills done'
 
-f = codecs.open('bills_not_found_in_lyapi_bills.txt','w', encoding='utf-8')
+f = codecs.open('bills_not_found_in_lyapi_bills.txt', 'w', encoding='utf-8')
 dict_list = json.load(open('lyapi_ttsmotions.json'))
 for motion in dict_list['entries']:
     if not motion['bill_refs']:
@@ -87,19 +91,21 @@ f.close()
 conn.commit()
 print 'billmotions done'
 
-c.execute('''select t.date, t.progress, t.bill_id
-        from bill_ttsmotions t
-        inner join (
-            select bill_id, max(date) as MaxDate
-            from bill_ttsmotions
-            group by bill_id
-        ) tm on t.bill_id = tm.bill_id and t.date = tm.MaxDate'''
+c.execute('''
+    select t.date, t.progress, t.bill_id
+    from bill_ttsmotions t
+    inner join (
+        select bill_id, max(date) as MaxDate
+        from bill_ttsmotions
+        group by bill_id
+    ) tm on t.bill_id = tm.bill_id and t.date = tm.MaxDate'''
 )
 response = c.fetchall()
-c.executemany('''UPDATE bill_bill
-        SET last_action_at = %s, last_action = %s
-        WHERE uid = %s''', response
-)  
+c.executemany('''
+    UPDATE bill_bill
+    SET last_action_at = %s, last_action = %s
+    WHERE uid = %s
+''', response)
 conn.commit()
 print 'last action information of bill done'
 print 'Succeed'

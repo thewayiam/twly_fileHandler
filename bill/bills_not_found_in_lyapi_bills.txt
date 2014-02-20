@@ -1,7 +1,12 @@
+not found in lyapi_bills:, 1353L15137, 17738:004
 not found in lyapi_bills:, 1581L13531之二, 17692:345
 not found in lyapi_bills:, 407L13900之二, 17692:346
 not found in lyapi_bills:, 1650L14440之ㄧ, 17692:347
+not found in lyapi_bills:, 666L13810 666委13814, 17749:001
+not found in lyapi_bills:, 1353L15137, 17754:002
+not found in lyapi_bills:, 1722L15837, 17735:002
 not found in lyapi_bills:, 1722L15837, 17667:317
+not found in lyapi_bills:, 1545L15320, 17719:002
 not found in lyapi_bills:, 1043L15641, 17584:243
 not found in lyapi_bills:, 1150L15640, 17584:245
 not found in lyapi_bills:, 775L15482之一, 17562:188

@@ -16,14 +16,16 @@ def Legislator(legislator):
         legislator['former_names'] = '\n'.join(legislator['former_names'])
     else:
         legislator.update({'former_names': ''})
-    c.execute('''UPDATE legislator_legislator
+    c.execute('''
+        UPDATE legislator_legislator
         SET name = %(name)s, former_names = %(former_names)s
-        WHERE uid = %(uid)s''', legislator
-    )
-    c.execute('''INSERT INTO legislator_legislator(uid, name, former_names)
+        WHERE uid = %(uid)s
+    ''', legislator)
+    c.execute('''
+        INSERT INTO legislator_legislator(uid, name, former_names)
         SELECT %(uid)s, %(name)s, %(former_names)s
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislator WHERE uid = %(uid)s)''', legislator
-    )
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislator WHERE uid = %(uid)s)
+    ''', legislator)
 
 def LegislatorDetail(uid, term, ideal_term_end_year):
     if term.has_key('education'):
@@ -37,33 +39,38 @@ def LegislatorDetail(uid, term, ideal_term_end_year):
     if match:
         complement.update({"county": match.group('county')})
     complement.update(term)
-    c.execute('''UPDATE legislator_legislatordetail
+    c.execute('''
+        UPDATE legislator_legislatordetail
         SET name = %(name)s, gender = %(gender)s, party = %(party)s, caucus = %(caucus)s, constituency = %(constituency)s, in_office = %(in_office)s, contacts = %(contacts)s, county = %(county)s, term_start = %(term_start)s, term_end = %(term_end)s, education = %(education)s, experience = %(experience)s, remark = %(remark)s, image = %(image)s, links = %(links)s
-        WHERE legislator_id = %(uid)s and ad = %(ad)s''', complement
-    )
-    c.execute('''INSERT into legislator_legislatordetail(legislator_id, ad, name, gender, party, caucus, constituency, county, in_office, contacts, term_start, term_end, education, experience, remark, image, links, hits)
+        WHERE legislator_id = %(uid)s and ad = %(ad)s
+    ''', complement)
+    c.execute('''
+        INSERT into legislator_legislatordetail(legislator_id, ad, name, gender, party, caucus, constituency, county, in_office, contacts, term_start, term_end, education, experience, remark, image, links, hits)
         SELECT %(uid)s, %(ad)s, %(name)s, %(gender)s, %(party)s, %(caucus)s, %(constituency)s, %(county)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s, 0
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislatordetail WHERE legislator_id = %(uid)s and ad = %(ad)s ) RETURNING id''', complement
-    )
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislatordetail WHERE legislator_id = %(uid)s and ad = %(ad)s ) RETURNING id
+    ''', complement)
 
 def Committees(committees):
-    c.executemany('''INSERT INTO committees_committees(name)
+    c.executemany('''
+        INSERT INTO committees_committees(name)
         SELECT %(name)s
-        WHERE NOT EXISTS (SELECT 1 FROM committees_committees WHERE name = %(name)s)''', committees
-    )
+        WHERE NOT EXISTS (SELECT 1 FROM committees_committees WHERE name = %(name)s)
+    ''', committees)
 
 def Legislator_Committees(legislator_id, committee):
     complement = {"legislator_id":legislator_id}
     complement.update(committee)
-    c.execute('''UPDATE committees_legislator_committees
+    c.execute('''
+        UPDATE committees_legislator_committees
         SET chair = %(chair)s
-        WHERE legislator_id = %(legislator_id)s and committee_id = %(name)s and ad = %(ad)s and session = %(session)s''', complement
-    )
-    c.execute('''INSERT INTO committees_legislator_committees(legislator_id, committee_id, ad, session, chair)
+        WHERE legislator_id = %(legislator_id)s and committee_id = %(name)s and ad = %(ad)s and session = %(session)s
+    ''', complement)
+    c.execute('''
+        INSERT INTO committees_legislator_committees(legislator_id, committee_id, ad, session, chair)
         SELECT %(legislator_id)s, %(name)s, %(ad)s, %(session)s, %(chair)s
-        WHERE NOT EXISTS (SELECT 1 FROM committees_legislator_committees WHERE legislator_id = %(legislator_id)s and committee_id = %(name)s and ad = %(ad)s and session = %(session)s )''', complement
-    )
-   
+        WHERE NOT EXISTS (SELECT 1 FROM committees_legislator_committees WHERE legislator_id = %(legislator_id)s and committee_id = %(name)s and ad = %(ad)s and session = %(session)s )
+    ''', complement)
+
 conn = db_ly.con()
 c = conn.cursor()
 

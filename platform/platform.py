@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys 
+import sys
 sys.path.append('../')
 import re
 import codecs
@@ -9,16 +9,18 @@ import ly_common
 
 
 def PartyPlatform(content, category, party):
-    c.execute('''INSERT into legislator_platform(content, category, party) 
-            SELECT %s, %s, %s
-            WHERE NOT EXISTS (SELECT 1 FROM legislator_platform WHERE content = %s AND party = %s )''', (content, category, party, content, party)
-    )  
+    c.execute('''
+        INSERT into legislator_platform(content, category, party)
+        SELECT %s, %s, %s
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_platform WHERE content = %s AND party = %s )
+    ''', (content, category, party, content, party))
 
 def PersonalPlatform(legislator_id, content, category):
-    c.execute('''INSERT into legislator_platform(legislator_id, content, category) 
-            SELECT %s, %s, %s
-            WHERE NOT EXISTS (SELECT 1 FROM legislator_platform WHERE legislator_id = %s AND content = %s )''',(legislator_id, content, category, legislator_id, content)
-    )  
+    c.execute('''
+        INSERT into legislator_platform(legislator_id, content, category)
+        SELECT %s, %s, %s
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_platform WHERE legislator_id = %s AND content = %s )
+    ''',(legislator_id, content, category, legislator_id, content))
 
 conn = db_ly.con()
 c = conn.cursor()
@@ -45,12 +47,12 @@ for line in sourcetext.readlines():
     line = line.strip()
     if not line:
         continue
-    if len(line) < 7 and re.search(u'(?<!：)$',line):
+    if len(line) < 7 and re.search(u'(?<!：)$', line):
         party = line
         print line
     else:
         if party:
-            if re.search(u'[：]$',line):
+            if re.search(u'[：]$', line):
                 PartyPlatform(line, 0, party)
             else:
                 PartyPlatform(line, 1, party)
