@@ -96,3 +96,33 @@ def InsertSitting(c, sitting_dict):
         SELECT %(uid)s, %(name)s, %(date)s, %(ad)s, %(session)s, %(committee)s
         WHERE NOT EXISTS (SELECT 1 FROM sittings_sittings WHERE uid = %(uid)s)
     ''', complement)
+
+def UpdateSitting(c, uid, name):
+    c.execute('''
+        UPDATE sittings_sittings
+        SET name = %s
+        WHERE uid = %s
+    ''', (name, uid))
+
+def remote_newline_in_sittings(c):
+    c.execute('''
+        select uid, name
+        from sittings_sittings
+    ''')
+    for uid, name in c.fetchall():
+        UpdateSitting(c, uid, re.sub(u'[\s]', '', name))
+
+def UpdateFileLog(c, id, sitting):
+    c.execute('''
+        UPDATE legislator_filelog
+        SET sitting = %s
+        WHERE id = %s
+    ''', (sitting, id))
+
+def remote_newline_in_filelog(c):
+    c.execute('''
+        select id, sitting
+        from legislator_filelog
+    ''')
+    for id, sitting in c.fetchall():
+        UpdateFileLog(c, id, re.sub(u'[\s]', '', sitting))
