@@ -75,7 +75,7 @@ conn = db_ly.con()
 c = conn.cursor()
 
 f = codecs.open('no_committees.txt','w', encoding='utf-8')
-dict_list = json.load(open('merged.json'))
+dict_list = json.load(open('../data/twly_crawler/merged.json'))
 ideal_term_end_year = {"1":1993, "2":1996, "3":1999, "4":2002, "5":2005, "6":2008, "7":2012, "8":2016}
 for legislator in dict_list:
     Legislator(legislator)
