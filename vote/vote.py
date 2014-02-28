@@ -99,17 +99,46 @@ def LiterateVoter(c, sitting_dict, text, vote_id, decision):
             legislator_id = ly_common.GetLegislatorDetailId(c, legislator_id, sitting_dict["ad"])
             MakeVoteRelation(legislator_id, vote_id, decision)
         else:
+            print 'break at: %s' % name
             break
+
+def IterEachDecision(c, votertext, sitting_dict, vote_id):
+    mapprove, mreject, mquit = re.search(u'\s贊成[\S]*?者[:：][\d]+人', votertext), re.search(u'\s反對[\S]*?者[:：][\d]+人', votertext), re.search(u'棄權者[:：][\d]+人', votertext)
+    if not mapprove:
+        print u'==找不到贊成者==\n', votertext
+    else:
+        LiterateVoter(c, sitting_dict, votertext[mapprove.end():], vote_id, 1)
+    if not mreject:
+        print u'==找不到反對者==\n', votertext
+    else:
+        LiterateVoter(c, sitting_dict, votertext[mreject.end():], vote_id, -1)
+    if not mquit:
+        print u'==找不到棄權者==\n', votertext
+    else:
+        LiterateVoter(c, sitting_dict, votertext[mquit.end():], vote_id, 0)
+    return mapprove, mreject, mquit
 
 def IterVote(c, text, sitting_dict):
     sitting_id = sitting_dict["uid"]
     print sitting_id
     match, vote_id = None, None
-    mvoter = re.search(u'記名(投票)?表決結果名單[:：]', text)
+    # For veto or no-confidence voting
+    mvoter = re.search(u'記名投票表決結果[:：]', text)
+    if mvoter:
+        print u'有特殊表決!!\n'
+        votertext = text[mvoter.end():]
+        vote_seq = '000'
+        vote_id = '%s-%s' % (sitting_id, vote_seq)
+        content = GetVoteContent(c, vote_seq, text[:mvoter.start()])
+        if content:
+            InsertVote(vote_id, sitting_id, vote_seq, content)
+        if vote_id:
+            mapprove, mreject, mquit = IterEachDecision(c, votertext, sitting_dict, vote_id)
+    # For normal voting
+    mvoter = re.search(u'記名表決結果名單[:：]', text)
     if mvoter:
         votertext = text[mvoter.end():]
         for match in re.finditer(u'附後[（(】。](?P<vote_seq>[\d]+)?', text):
-            mapprove , mreject , mquit = re.search(u'贊成者[:：][\d]+人', votertext) , re.search(u'反對者[:：][\d]+人', votertext) , re.search(u'棄權者[:：][\d]+人', votertext)
             if match.group('vote_seq'):
                 vote_seq = '%03d' % int(match.group('vote_seq'))
             else:
@@ -119,19 +148,8 @@ def IterVote(c, text, sitting_dict):
             if content:
                 InsertVote(vote_id, sitting_id, vote_seq, content)
             if vote_id:
-                if not mapprove:
-                    print u'==找不到贊成者==\n' ,votertext
-                else:
-                    LiterateVoter(c, sitting_dict, votertext[mapprove.end():], vote_id, 1)
-                if not mreject:
-                    print u'==找不到反對者==\n' ,votertext
-                else:
-                    LiterateVoter(c, sitting_dict, votertext[mreject.end():], vote_id, -1)
-                if not mquit:
-                    print u'==找不到棄權者==\n' ,votertext
-                else:
-                    LiterateVoter(c, sitting_dict, votertext[mquit.end():], vote_id, 0)
-            votertext = votertext[mquit.end():]
+                mapprove, mreject, mquit = IterEachDecision(c, votertext, sitting_dict, vote_id)
+            votertext = votertext[(mquit or mreject or mapprove).end():]
         if not match:
             print u'有記名表決結果名單無附後'
     else:
