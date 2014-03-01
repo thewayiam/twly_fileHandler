@@ -31,11 +31,11 @@ for line in sourcetext.readlines():
     if not line:
         continue
     uid = ly_common.GetLegislatorId(c, line)
-    if uid:
+    if uid: # if this line is name of legislators
         legislator_id = ly_common.GetLegislatorDetailId(c, uid, 8)
     else:
         if legislator_id:
-            if re.search(u'[：]$',line):
+            if re.search(u'[：]$', line):
                 PersonalPlatform(legislator_id, line, 0)
             else:
                 PersonalPlatform(legislator_id, line, 1)
