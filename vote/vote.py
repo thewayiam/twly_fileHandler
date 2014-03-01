@@ -121,19 +121,7 @@ def IterEachDecision(c, votertext, sitting_dict, vote_id):
 def IterVote(c, text, sitting_dict):
     sitting_id = sitting_dict["uid"]
     print sitting_id
-    match, vote_id = None, None
-    # For veto or no-confidence voting
-    mvoter = re.search(u'記名投票表決結果[:：]', text)
-    if mvoter:
-        print u'有特殊表決!!\n'
-        votertext = text[mvoter.end():]
-        vote_seq = '000'
-        vote_id = '%s-%s' % (sitting_id, vote_seq)
-        content = GetVoteContent(c, vote_seq, text[:mvoter.start()])
-        if content:
-            InsertVote(vote_id, sitting_id, vote_seq, content)
-        if vote_id:
-            mapprove, mreject, mquit = IterEachDecision(c, votertext, sitting_dict, vote_id)
+    match, vote_id, vote_seq = None, None, '000'
     # For normal voting
     mvoter = re.search(u'記名表決結果名單[:：]', text)
     if mvoter:
@@ -154,6 +142,18 @@ def IterVote(c, text, sitting_dict):
             print u'有記名表決結果名單無附後'
     else:
         print u'無記名表決結果名單'
+    # For veto or no-confidence voting
+    mvoter = re.search(u'記名投票表決結果[:：]', text)
+    if mvoter:
+        print u'有特殊表決!!\n'
+        votertext = text[mvoter.end():]
+        vote_seq = '%03d' % (int(vote_seq)+1)
+        vote_id = '%s-%s' % (sitting_id, vote_seq)
+        content = GetVoteContent(c, vote_seq, text[:mvoter.start()])
+        if content:
+            InsertVote(vote_id, sitting_id, vote_seq, content)
+        if vote_id:
+            mapprove, mreject, mquit = IterEachDecision(c, votertext, sitting_dict, vote_id)
 
 conn = db_ly.con()
 c = conn.cursor()
