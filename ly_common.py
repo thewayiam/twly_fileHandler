@@ -34,10 +34,13 @@ def GetLegislatorId(c, name):
         SELECT uid
         FROM legislator_legislator
         WHERE name like %s
+        ORDER BY uid desc
     ''', (name_like,))
     r = c.fetchone()
     if r:
         return r[0]
+    else:
+        print name
 
 def GetLegislatorDetailId(c, legislator_id, ad):
     c.execute('''
@@ -48,6 +51,8 @@ def GetLegislatorDetailId(c, legislator_id, ad):
     r = c.fetchone()
     if r:
         return r[0]
+    else:
+        print legislator_id
 
 def GetLegislatorIdList(c, text):
     id_list, firstName = [], ''
@@ -66,7 +71,7 @@ def GetLegislatorIdList(c, text):
         legislator_id = GetLegislatorId(c, name)
         if legislator_id:
             id_list.append(legislator_id)
-        else:   # return id list if not an legislator name
+        else:   # return id list if not an legislator name appear
             return id_list
 
 def AddAttendanceRecord(c, legislator_id, sitting_id, category, status):
