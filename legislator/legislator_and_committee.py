@@ -74,7 +74,7 @@ def Legislator_Committees(legislator_id, committee):
 conn = db_ly.con()
 c = conn.cursor()
 
-f = codecs.open('no_committees.txt','w', encoding='utf-8')
+f = codecs.open('no_committees.txt', 'w', encoding='utf-8')
 dict_list = json.load(open('../data/twly_crawler/merged.json'))
 ideal_term_end_year = {"1":1993, "2":1996, "3":1999, "4":2002, "5":2005, "6":2008, "7":2012, "8":2016}
 for legislator in dict_list:
@@ -90,4 +90,16 @@ for legislator in dict_list:
             f.write('no committees!!, uid: %s, name: %s, ad: %s\n' % (legislator["uid"], term["name"], term["ad"]))
 f.close()
 conn.commit()
+
+# Export auto-complete json file of legislator name & county
+from pandas import *
+import pandas.io.sql as psql
+
+
+for ad in range(1, 9):
+    df = psql.frame_query("SELECT name as label, county as category FROM legislator_legislatordetail where ad=%d" % ad, conn)
+    f = codecs.open('legislator_%d.json' % ad, 'w', encoding='utf-8')
+    f.write(df.to_json(orient='records'))
+    f.close()
+
 print 'Succeed'
