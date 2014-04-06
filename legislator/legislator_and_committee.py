@@ -34,19 +34,24 @@ def LegislatorDetail(uid, term, ideal_term_end_year):
         term['experience'] = '\n'.join(term['experience'])
     if term.has_key('remark'):
         term['remark'] = '\n'.join(term['remark'])
-    complement = {"uid":uid, "gender":'', "party":'', "caucus":'', "contacts":None, "county":term['constituency'], "district":'',  "term_start":None, "term_end":{"date": '%04d-01-31' % int(ideal_term_end_year)}, "education":None, "experience":None, "remark":None, "image":'', "links":None}
+    term.pop('county', None)
+    if term.has_key('district'):
+        term['district'] = ' '.join([x for x in term['district']])
+    if term.has_key('village'):
+        term['village'] = ' '.join([x for x in term['village']])
+    complement = {"uid":uid, "gender":'', "party":'', "caucus":'', "contacts":None, "county":term['constituency'], "district":'', "village":'', "term_start":None, "term_end":{"date": '%04d-01-31' % int(ideal_term_end_year)}, "education":None, "experience":None, "remark":None, "image":'', "links":None}
     match = re.search(u'(?P<county>[\W]{1,2}(縣|市))', term['constituency'])
     if match:
         complement.update({"county": match.group('county')})
     complement.update(term)
     c.execute('''
         UPDATE legislator_legislatordetail
-        SET name = %(name)s, gender = %(gender)s, party = %(party)s, caucus = %(caucus)s, constituency = %(constituency)s, in_office = %(in_office)s, contacts = %(contacts)s, county = %(county)s, term_start = %(term_start)s, term_end = %(term_end)s, education = %(education)s, experience = %(experience)s, remark = %(remark)s, image = %(image)s, links = %(links)s
+        SET name = %(name)s, gender = %(gender)s, party = %(party)s, caucus = %(caucus)s, constituency = %(constituency)s, in_office = %(in_office)s, contacts = %(contacts)s, county = %(county)s, district = %(district)s, village = %(village)s, term_start = %(term_start)s, term_end = %(term_end)s, education = %(education)s, experience = %(experience)s, remark = %(remark)s, image = %(image)s, links = %(links)s
         WHERE legislator_id = %(uid)s and ad = %(ad)s
     ''', complement)
     c.execute('''
-        INSERT into legislator_legislatordetail(legislator_id, ad, name, gender, party, caucus, constituency, county, in_office, contacts, term_start, term_end, education, experience, remark, image, links, hits)
-        SELECT %(uid)s, %(ad)s, %(name)s, %(gender)s, %(party)s, %(caucus)s, %(constituency)s, %(county)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s, 0
+        INSERT into legislator_legislatordetail(legislator_id, ad, name, gender, party, caucus, constituency, county, district, village, in_office, contacts, term_start, term_end, education, experience, remark, image, links, hits)
+        SELECT %(uid)s, %(ad)s, %(name)s, %(gender)s, %(party)s, %(caucus)s, %(constituency)s, %(county)s, %(district)s, %(village)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s, 0
         WHERE NOT EXISTS (SELECT 1 FROM legislator_legislatordetail WHERE legislator_id = %(uid)s and ad = %(ad)s ) RETURNING id
     ''', complement)
 
