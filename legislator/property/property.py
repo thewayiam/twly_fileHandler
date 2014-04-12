@@ -74,11 +74,10 @@ for f in files:
         df = df_orgi[bookmarks[i]['position'] + 1 : bookmarks[i+1]['position']]
         df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop if column 0 or 1 empty
         df.dropna(inplace=True, how='all', axis=1) # At least one item in one column
-        print df.columns
         if not df.empty:
             df.columns = map(lambda x: x.replace(' ', '') if isinstance(x, basestring) else x, df.iloc[0].replace(nan, ''))
             df[1:].to_excel(writer, sheet_name=bookmarks[i]['name'])
-            print df[1:].to_json(orient='records')
+            #print df[1:].to_json(orient='records')
     writer.save()
 #output_pretty_file = codecs.open('./data(pretty_format)/merged.json', 'w', encoding='utf-8')
 #dump_data = json.dumps(npl_dict_list, sort_keys=True, indent=4, ensure_ascii=False)
