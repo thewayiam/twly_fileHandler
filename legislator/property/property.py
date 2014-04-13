@@ -75,6 +75,8 @@ for f in files:
         df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop if column 0 or 1 empty
         df.dropna(inplace=True, how='all', axis=1) # At least one item in one column
         if not df.empty:
+            df[1:] = df[ df[0] != df.iloc[0][0] ]
+            df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop if column 0 or 1 empty
             df.columns = map(lambda x: x.replace(' ', '') if isinstance(x, basestring) else x, df.iloc[0].replace(nan, ''))
             df[1:].to_excel(writer, sheet_name=bookmarks[i]['name'])
             #print df[1:].to_json(orient='records')
