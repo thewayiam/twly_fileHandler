@@ -5,10 +5,9 @@ sys.path.append('../../')
 import os
 import re
 import codecs
-import json
 import glob
 from operator import itemgetter
-from pandas import *
+import json
 import pandas as pd
 from numpy import nan
 import numpy as np
@@ -68,6 +67,8 @@ models = {
         "columns": ['name', 'owner', 'quantity', 'face_value', 'currency', 'total']
     }
 }
+output_file = codecs.open('./output/property.json', 'w', encoding='utf-8')
+output_list = []
 for f in files:
     print f
     df_orgi = pd.read_excel(f, 0, header=None, encoding='utf-8')
@@ -88,15 +89,13 @@ for f in files:
                 df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop if column 0 or 1 empty
                 if bookmarks[i]['name'].strip() == u"股票" or bookmarks[i]['name'].strip() == u"有價證券":
                     df.columns = models[u"股票"]["columns"]
+                    df['property_category'] = 'stock'
                     df['date'] = date
                     df['legislator_name'] = name
                     df['legislator_id'] = legislator_id
-                   #print df[1:].to_json(orient='records')
-                   #output_file = codecs.open('output/property.json', 'w', encoding='utf-8')
-                   #dict_list = json.loads(df[1:].to_json(orient='records'))
-                   #dump_data = json.dumps(dict_list, sort_keys=True, indent=4, ensure_ascii=False)
-                   #output_file.write(dump_data)
-                   #output_file.close()
+                    df.replace(to_replace=u'[\s，,\']', value='', inplace=True, regex=True)
+                    dict_list = json.loads(df[1:].to_json(orient='records'))
+                    output_list.extend(dict_list)
                 else:
                     df.columns = map(lambda x: x.replace(' ', '') if isinstance(x, basestring) else x, df.iloc[0].replace(nan, ''))
                 df[1:].to_excel(writer, sheet_name=bookmarks[i]['name'])
@@ -107,3 +106,6 @@ for f in files:
         writer = pd.ExcelWriter('output/trust/%s_%s_%s_%s.xlsx' % (name, date, title, os.path.splitext(os.path.basename(f))[0]), engine='xlsxwriter')
     else:
         writer = pd.ExcelWriter('output/others/%s_%s_%s_%s.xlsx' % (name, date, title, os.path.splitext(os.path.basename(f))[0]), engine='xlsxwriter')
+dump_data = json.dumps(output_list, sort_keys=True, indent=4, ensure_ascii=False)
+output_file.write(dump_data)
+output_file.close()
