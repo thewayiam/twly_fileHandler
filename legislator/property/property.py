@@ -58,6 +58,18 @@ def get_table_range(rows, targets):
         #print '%s not found!' % target
     return sorted(bookmarks, key=itemgetter('position'))
 
+def upsert_legislator_stock(dataset):
+    c.executemany('''
+        UPDATE legislator_stock
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, owner = %(owner)s, quantity = %(quantity)s, face_value = %(face_value)s, currency = %(currency)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO legislator_stock(legislator_id, date, category, name, owner, quantity, face_value, currency, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(owner)s, %(quantity)s, %(face_value)s, %(currency)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_stock WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
 conn = db_ly.con()
 c = conn.cursor()
 files = [f for f in glob.glob('data/*.xlsx')]
@@ -71,6 +83,7 @@ output_file = codecs.open('./output/property.json', 'w', encoding='utf-8')
 output_list = []
 for f in files:
     print f
+    filename = os.path.splitext(os.path.basename(f))[0]
     df_orgi = pd.read_excel(f, 0, header=None, encoding='utf-8')
     df_orgi.replace(to_replace=u'監察院公報\S*', regex=True, value=nan, inplace=True)
     bookmarks = get_table_range(df_orgi[df_orgi.columns[0]], categories)
@@ -79,7 +92,7 @@ for f in files:
     name = get_name(df_orgi)
     if title == u'財產申報表':
         legislator_id = ly_common.GetLegislatorId(c, name)
-        writer = pd.ExcelWriter('output/normal/%s_%s_%s_%s.xlsx' % (name, date, title, os.path.splitext(os.path.basename(f))[0]), engine='xlsxwriter')
+        writer = pd.ExcelWriter('output/normal/%s_%s_%s_%s.xlsx' % (name, date, title, filename), engine='xlsxwriter')
         for i in range(0, len(bookmarks) - 1):
             df = df_orgi[bookmarks[i]['position'] + 1 : bookmarks[i+1]['position']]
             df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop row if column 0 or 1 empty
@@ -89,12 +102,24 @@ for f in files:
                 df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop if column 0 or 1 empty
                 if bookmarks[i]['name'].strip() == u"股票" or bookmarks[i]['name'].strip() == u"有價證券":
                     df.columns = models[u"股票"]["columns"]
+                    df.replace(to_replace=u'[\s，,’^《•★；;、_\-/\']', value='', inplace=True, regex=True)
                     df['property_category'] = 'stock'
+                    df['category'] = 'normal'
                     df['date'] = date
                     df['legislator_name'] = name
                     df['legislator_id'] = legislator_id
-                    df.replace(to_replace=u'[\s，,\']', value='', inplace=True, regex=True)
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['quantity'].replace(to_replace=u'[\D]', value='', inplace=True, regex=True)
+                    #df['face_value'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    #df['total'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
                     dict_list = json.loads(df[1:].to_json(orient='records'))
+                    try:
+                        upsert_legislator_stock(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
                     output_list.extend(dict_list)
                 else:
                     df.columns = map(lambda x: x.replace(' ', '') if isinstance(x, basestring) else x, df.iloc[0].replace(nan, ''))
