@@ -70,6 +70,18 @@ def upsert_legislator_stock(dataset):
         WHERE NOT EXISTS (SELECT 1 FROM legislator_stock WHERE index = %(index)s and source_file = %(source_file)s)
     ''', dataset)
 
+def upsert_legislator_land(dataset):
+    c.executemany('''
+        UPDATE legislator_land
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, area = %(area)s, share_portion = %(share_portion)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO legislator_land(legislator_id, date, category, name, area, share_portion, owner, register_date, register_reason, acquire_value, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(area)s, %(share_portion)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_land WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
 conn = db_ly.con()
 c = conn.cursor()
 files = [f for f in glob.glob('data/*.xlsx')]
@@ -77,6 +89,9 @@ categories = [u'土地', u'建物', u'船舶', u'汽車', u'航空器', u'現金
 models = {
     u"股票": {
         "columns": ['name', 'owner', 'quantity', 'face_value', 'currency', 'total']
+    },
+    u"土地": {
+        "columns": ['name', 'area', 'share_portion', 'owner', 'register_date', 'register_reason', 'acquire_value']
     }
 }
 output_file = codecs.open('./output/property.json', 'w', encoding='utf-8')
@@ -100,9 +115,9 @@ for f in files:
             if not df.empty:
                 df[1:] = df[ df[0] != df.iloc[0][0] ]
                 df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop if column 0 or 1 empty
+                df.replace(to_replace=u'[\s，,’^《•★；;、_\-/\']', value='', inplace=True, regex=True)
                 if bookmarks[i]['name'].strip() == u"股票" or bookmarks[i]['name'].strip() == u"有價證券":
                     df.columns = models[u"股票"]["columns"]
-                    df.replace(to_replace=u'[\s，,’^《•★；;、_\-/\']', value='', inplace=True, regex=True)
                     df['property_category'] = 'stock'
                     df['category'] = 'normal'
                     df['date'] = date
@@ -111,11 +126,28 @@ for f in files:
                     df['source_file'] = filename
                     df['index'] = df.index
                     df['quantity'].replace(to_replace=u'[\D]', value='', inplace=True, regex=True)
-                    #df['face_value'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
-                    #df['total'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
-                    dict_list = json.loads(df[1:].to_json(orient='records'))
                     try:
+                        dict_list = json.loads(df[1:].to_json(orient='records'))
                         upsert_legislator_stock(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"土地":
+                    df.columns = models[u"土地"]["columns"]
+                    df['property_category'] = 'land'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['area'].replace(to_replace=u'[^\d\.]', value='', inplace=True, regex=True)
+                    df['area'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    try:
+                        dict_list = json.loads(df[1:].to_json(orient='records'))
+                        upsert_legislator_land(dict_list)
                     except:
                         print df
                         raise
