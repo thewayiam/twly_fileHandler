@@ -55,8 +55,15 @@ def get_table_range(rows, targets):
                 if re.search(target, rows[i]):
                     bookmarks.append({"name": target, "position": i})
                     break
-        #print '%s not found!' % target
     return sorted(bookmarks, key=itemgetter('position'))
+
+def get_portion(value):
+    match = re.search(u'(?P<divider>\d+)\D+(?P<divide>\d+)', value)
+    if match:
+        return float(match.group('divide')) / float(match.group('divider'))
+    if re.search(u'全部', value):
+        return 1.0
+    print value
 
 def upsert_legislator_stock(dataset):
     c.executemany('''
@@ -73,12 +80,12 @@ def upsert_legislator_stock(dataset):
 def upsert_legislator_land(dataset):
     c.executemany('''
         UPDATE legislator_land
-        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, area = %(area)s, share_portion = %(share_portion)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, area = %(area)s, share_portion = %(share_portion)s, portion = %(portion)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s
         WHERE index = %(index)s and source_file = %(source_file)s
     ''', dataset)
     c.executemany('''
-        INSERT INTO legislator_land(legislator_id, date, category, name, area, share_portion, owner, register_date, register_reason, acquire_value, source_file, index)
-        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(area)s, %(share_portion)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(source_file)s, %(index)s
+        INSERT INTO legislator_land(legislator_id, date, category, name, area, share_portion, portion, owner, register_date, register_reason, acquire_value, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(area)s, %(share_portion)s, %(portion)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(source_file)s, %(index)s
         WHERE NOT EXISTS (SELECT 1 FROM legislator_land WHERE index = %(index)s and source_file = %(source_file)s)
     ''', dataset)
 
@@ -110,10 +117,11 @@ for f in files:
         writer = pd.ExcelWriter('output/normal/%s_%s_%s_%s.xlsx' % (name, date, title, filename), engine='xlsxwriter')
         for i in range(0, len(bookmarks) - 1):
             df = df_orgi[bookmarks[i]['position'] + 1 : bookmarks[i+1]['position']]
-            df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop row if column 0 or 1 empty
-            df.dropna(inplace=True, how='all', axis=1, thresh=2) # Drop column if non-nan cell not more than one
+            df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop rows who's column 0 or 1 are empty
+            df.dropna(inplace=True, how='all', axis=1, thresh=2) # Drop columns who's non-nan cell not more than one
             if not df.empty:
-                df[1:] = df[ df[0] != df.iloc[0][0] ]
+                df[1:] = df[ df[0] != df.iloc[0][0] ] # Remove rows who's first column equal to index fisrt column
+                df = df[1:]
                 df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop if column 0 or 1 empty
                 df.replace(to_replace=u'[\s，,’^《•★；;、_\-/\']', value='', inplace=True, regex=True)
                 if bookmarks[i]['name'].strip() == u"股票" or bookmarks[i]['name'].strip() == u"有價證券":
@@ -143,8 +151,11 @@ for f in files:
                     df['legislator_id'] = legislator_id
                     df['source_file'] = filename
                     df['index'] = df.index
+                    df['portion'] = map(lambda x: get_portion(x), df['share_portion'])
                     df['area'].replace(to_replace=u'[^\d\.]', value='', inplace=True, regex=True)
                     df['area'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['area'] = df['area'].astype(float)
+                    df['total'] = df['area'] * df['portion']
                     try:
                         dict_list = json.loads(df[1:].to_json(orient='records'))
                         upsert_legislator_land(dict_list)
