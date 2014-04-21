@@ -80,13 +80,25 @@ def upsert_legislator_stock(dataset):
 def upsert_legislator_land(dataset):
     c.executemany('''
         UPDATE legislator_land
-        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, area = %(area)s, share_portion = %(share_portion)s, portion = %(portion)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, area = %(area)s, share_portion = %(share_portion)s, portion = %(portion)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s, total = %(total)s
         WHERE index = %(index)s and source_file = %(source_file)s
     ''', dataset)
     c.executemany('''
-        INSERT INTO legislator_land(legislator_id, date, category, name, area, share_portion, portion, owner, register_date, register_reason, acquire_value, source_file, index)
-        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(area)s, %(share_portion)s, %(portion)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(source_file)s, %(index)s
+        INSERT INTO legislator_land(legislator_id, date, category, name, area, share_portion, portion, owner, register_date, register_reason, acquire_value, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(area)s, %(share_portion)s, %(portion)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(total)s, %(source_file)s, %(index)s
         WHERE NOT EXISTS (SELECT 1 FROM legislator_land WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
+def upsert_legislator_building(dataset):
+    c.executemany('''
+        UPDATE legislator_building
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, area = %(area)s, share_portion = %(share_portion)s, portion = %(portion)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO legislator_building(legislator_id, date, category, name, area, share_portion, portion, owner, register_date, register_reason, acquire_value, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(area)s, %(share_portion)s, %(portion)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_building WHERE index = %(index)s and source_file = %(source_file)s)
     ''', dataset)
 
 conn = db_ly.con()
@@ -123,7 +135,7 @@ for f in files:
                 df[1:] = df[ df[0] != df.iloc[0][0] ] # Remove rows who's first column equal to index fisrt column
                 df = df[1:]
                 df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop if column 0 or 1 empty
-                df.replace(to_replace=u'[\s，,’^《•★；;、_\-/\']', value='', inplace=True, regex=True)
+                df.replace(to_replace=u'[\s，,’^《•★；;、_/\'-]', value='', inplace=True, regex=True)
                 if bookmarks[i]['name'].strip() == u"股票" or bookmarks[i]['name'].strip() == u"有價證券":
                     df.columns = models[u"股票"]["columns"]
                     df['property_category'] = 'stock'
@@ -152,7 +164,7 @@ for f in files:
                     df['source_file'] = filename
                     df['index'] = df.index
                     df['portion'] = map(lambda x: get_portion(x), df['share_portion'])
-                    df['area'].replace(to_replace=u'[^\d\.]', value='', inplace=True, regex=True)
+                    df['area'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
                     df['area'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
                     df['area'] = df['area'].astype(float)
                     df['total'] = df['area'] * df['portion']
@@ -164,9 +176,31 @@ for f in files:
                         raise
                     conn.commit()
                     output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"建物":
+                    df.columns = models[u"土地"]["columns"]
+                    df['property_category'] = 'land'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['portion'] = map(lambda x: get_portion(x), df['share_portion'])
+                    df['area'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['area'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['area'] = df['area'].astype(float)
+                    df['total'] = df['area'] * df['portion']
+                    try:
+                        dict_list = json.loads(df[1:].to_json(orient='records'))
+                        upsert_legislator_building(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
                 else:
                     df.columns = map(lambda x: x.replace(' ', '') if isinstance(x, basestring) else x, df.iloc[0].replace(nan, ''))
-                df[1:].to_excel(writer, sheet_name=bookmarks[i]['name'])
+                df.to_excel(writer, sheet_name=bookmarks[i]['name'])
         writer.save()
     elif title == u'變動財產申報表':
         writer = pd.ExcelWriter('output/change/%s_%s_%s_%s.xlsx' % (name, date, title, os.path.splitext(os.path.basename(f))[0]), engine='xlsxwriter')
