@@ -65,40 +65,64 @@ def get_portion(value):
         return 1.0
     print value
 
-def upsert_legislator_stock(dataset):
+def upsert_property_stock(dataset):
     c.executemany('''
-        UPDATE legislator_stock
+        UPDATE property_stock
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, owner = %(owner)s, quantity = %(quantity)s, face_value = %(face_value)s, currency = %(currency)s, total = %(total)s
         WHERE index = %(index)s and source_file = %(source_file)s
     ''', dataset)
     c.executemany('''
-        INSERT INTO legislator_stock(legislator_id, date, category, name, owner, quantity, face_value, currency, total, source_file, index)
+        INSERT INTO property_stock(legislator_id, date, category, name, owner, quantity, face_value, currency, total, source_file, index)
         SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(owner)s, %(quantity)s, %(face_value)s, %(currency)s, %(total)s, %(source_file)s, %(index)s
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_stock WHERE index = %(index)s and source_file = %(source_file)s)
+        WHERE NOT EXISTS (SELECT 1 FROM property_stock WHERE index = %(index)s and source_file = %(source_file)s)
     ''', dataset)
 
-def upsert_legislator_land(dataset):
+def upsert_property_land(dataset):
     c.executemany('''
-        UPDATE legislator_land
+        UPDATE property_land
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, area = %(area)s, share_portion = %(share_portion)s, portion = %(portion)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s, total = %(total)s
         WHERE index = %(index)s and source_file = %(source_file)s
     ''', dataset)
     c.executemany('''
-        INSERT INTO legislator_land(legislator_id, date, category, name, area, share_portion, portion, owner, register_date, register_reason, acquire_value, total, source_file, index)
+        INSERT INTO property_land(legislator_id, date, category, name, area, share_portion, portion, owner, register_date, register_reason, acquire_value, total, source_file, index)
         SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(area)s, %(share_portion)s, %(portion)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(total)s, %(source_file)s, %(index)s
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_land WHERE index = %(index)s and source_file = %(source_file)s)
+        WHERE NOT EXISTS (SELECT 1 FROM property_land WHERE index = %(index)s and source_file = %(source_file)s)
     ''', dataset)
 
-def upsert_legislator_building(dataset):
+def upsert_property_building(dataset):
     c.executemany('''
-        UPDATE legislator_building
+        UPDATE property_building
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, area = %(area)s, share_portion = %(share_portion)s, portion = %(portion)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s, total = %(total)s
         WHERE index = %(index)s and source_file = %(source_file)s
     ''', dataset)
     c.executemany('''
-        INSERT INTO legislator_building(legislator_id, date, category, name, area, share_portion, portion, owner, register_date, register_reason, acquire_value, total, source_file, index)
+        INSERT INTO property_building(legislator_id, date, category, name, area, share_portion, portion, owner, register_date, register_reason, acquire_value, total, source_file, index)
         SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(area)s, %(share_portion)s, %(portion)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(total)s, %(source_file)s, %(index)s
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_building WHERE index = %(index)s and source_file = %(source_file)s)
+        WHERE NOT EXISTS (SELECT 1 FROM property_building WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
+def upsert_property_boat(dataset):
+    c.executemany('''
+        UPDATE property_boat
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, tonnage = %(tonnage)s, homeport = %(homeport)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_boat(legislator_id, date, category, name, tonnage, homeport, owner, register_date, register_reason, acquire_value, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(tonnage)s, %(homeport)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_boat WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
+def upsert_property_car(dataset):
+    c.executemany('''
+        UPDATE property_car
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, capacity = %(capacity)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_car(legislator_id, date, category, name, capacity, owner, register_date, register_reason, acquire_value, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(capacity)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_car WHERE index = %(index)s and source_file = %(source_file)s)
     ''', dataset)
 
 conn = db_ly.con()
@@ -111,6 +135,12 @@ models = {
     },
     u"土地": {
         "columns": ['name', 'area', 'share_portion', 'owner', 'register_date', 'register_reason', 'acquire_value']
+    },
+    u"船舶": {
+        "columns": ['name', 'tonnage', 'homeport', 'owner', 'register_date', 'register_reason', 'acquire_value']
+    },
+    u"汽車": {
+        "columns": ['name', 'capacity', 'owner', 'register_date', 'register_reason', 'acquire_value']
     }
 }
 output_file = codecs.open('./output/property.json', 'w', encoding='utf-8')
@@ -147,8 +177,8 @@ for f in files:
                     df['index'] = df.index
                     df['quantity'].replace(to_replace=u'[\D]', value='', inplace=True, regex=True)
                     try:
-                        dict_list = json.loads(df[1:].to_json(orient='records'))
-                        upsert_legislator_stock(dict_list)
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_stock(dict_list)
                     except:
                         print df
                         raise
@@ -169,8 +199,8 @@ for f in files:
                     df['area'] = df['area'].astype(float)
                     df['total'] = df['area'] * df['portion']
                     try:
-                        dict_list = json.loads(df[1:].to_json(orient='records'))
-                        upsert_legislator_land(dict_list)
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_land(dict_list)
                     except:
                         print df
                         raise
@@ -191,8 +221,48 @@ for f in files:
                     df['area'] = df['area'].astype(float)
                     df['total'] = df['area'] * df['portion']
                     try:
-                        dict_list = json.loads(df[1:].to_json(orient='records'))
-                        upsert_legislator_building(dict_list)
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_building(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"船舶":
+                    df.columns = models[u"船舶"]["columns"]
+                    df['property_category'] = 'land'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['tonnage'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['tonnage'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['tonnage'] = df['tonnage'].astype(float)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_boat(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"汽車":
+                    df.columns = models[u"汽車"]["columns"]
+                    df['property_category'] = 'land'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['capacity'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['capacity'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['capacity'] = df['capacity'].astype(float)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_car(dict_list)
                     except:
                         print df
                         raise
