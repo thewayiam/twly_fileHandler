@@ -125,6 +125,19 @@ def upsert_property_car(dataset):
         WHERE NOT EXISTS (SELECT 1 FROM property_car WHERE index = %(index)s and source_file = %(source_file)s)
     ''', dataset)
 
+def upsert_property_aircraft(dataset):
+    c.executemany('''
+        UPDATE property_aircraft
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, maker = %(maker)s, number = %(number)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_aircraft(legislator_id, date, category, name, maker, number, owner, register_date, register_reason, acquire_value, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(maker)s, %(number)s, %(owner)s, %(register_date)s, %(register_reason)s, %(acquire_value)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_aircraft WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
+
 conn = db_ly.con()
 c = conn.cursor()
 files = [f for f in glob.glob('data/*.xlsx')]
@@ -141,6 +154,12 @@ models = {
     },
     u"汽車": {
         "columns": ['name', 'capacity', 'owner', 'register_date', 'register_reason', 'acquire_value']
+    },
+    u"船舶": {
+        "columns": ['name', 'tonnage', 'homeport', 'owner', 'register_date', 'register_reason', 'acquire_value']
+    },
+    u"航空器": {
+        "columns": ['name', 'maker', 'number', 'owner', 'register_date', 'register_reason', 'acquire_value']
     }
 }
 output_file = codecs.open('./output/property.json', 'w', encoding='utf-8')
@@ -208,7 +227,7 @@ for f in files:
                     output_list.extend(dict_list)
                 elif bookmarks[i]['name'].strip() == u"建物":
                     df.columns = models[u"土地"]["columns"]
-                    df['property_category'] = 'land'
+                    df['property_category'] = 'building'
                     df['category'] = 'normal'
                     df['date'] = date
                     df['legislator_name'] = name
@@ -230,7 +249,7 @@ for f in files:
                     output_list.extend(dict_list)
                 elif bookmarks[i]['name'].strip() == u"船舶":
                     df.columns = models[u"船舶"]["columns"]
-                    df['property_category'] = 'land'
+                    df['property_category'] = 'boat'
                     df['category'] = 'normal'
                     df['date'] = date
                     df['legislator_name'] = name
@@ -250,7 +269,7 @@ for f in files:
                     output_list.extend(dict_list)
                 elif bookmarks[i]['name'].strip() == u"汽車":
                     df.columns = models[u"汽車"]["columns"]
-                    df['property_category'] = 'land'
+                    df['property_category'] = 'car'
                     df['category'] = 'normal'
                     df['date'] = date
                     df['legislator_name'] = name
@@ -263,6 +282,24 @@ for f in files:
                     try:
                         dict_list = json.loads(df.to_json(orient='records'))
                         upsert_property_car(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"航空器":
+                    print df
+                    df.columns = models[u"航空器"]["columns"]
+                    df['property_category'] = 'aircraft'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_aircraft(dict_list)
                     except:
                         print df
                         raise
