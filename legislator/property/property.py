@@ -137,6 +137,29 @@ def upsert_property_aircraft(dataset):
         WHERE NOT EXISTS (SELECT 1 FROM property_aircraft WHERE index = %(index)s and source_file = %(source_file)s)
     ''', dataset)
 
+def upsert_property_cash(dataset):
+    c.executemany('''
+        UPDATE property_cash
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, currency = %(currency)s, owner = %(owner)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_cash(legislator_id, date, category, currency, owner, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(currency)s, %(owner)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_cash WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
+def upsert_property_deposit(dataset):
+    c.executemany('''
+        UPDATE property_deposit
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, bank = %(bank)s, deposit_type = %(deposit_type)s, currency = %(currency)s, owner = %(owner)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_deposit(legislator_id, date, category, bank, deposit_type, currency, owner, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(bank)s, %(deposit_type)s, %(currency)s, %(owner)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_deposit WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
 
 conn = db_ly.con()
 c = conn.cursor()
@@ -160,6 +183,12 @@ models = {
     },
     u"航空器": {
         "columns": ['name', 'maker', 'number', 'owner', 'register_date', 'register_reason', 'acquire_value']
+    },
+    u"現金": {
+        "columns": ['currency', 'owner', 'total']
+    },
+    u"存款": {
+        "columns": ['bank', 'deposit_type', 'currency', 'owner', 'total']
     }
 }
 output_file = codecs.open('./output/property.json', 'w', encoding='utf-8')
@@ -288,7 +317,6 @@ for f in files:
                     conn.commit()
                     output_list.extend(dict_list)
                 elif bookmarks[i]['name'].strip() == u"航空器":
-                    print df
                     df.columns = models[u"航空器"]["columns"]
                     df['property_category'] = 'aircraft'
                     df['category'] = 'normal'
@@ -300,6 +328,50 @@ for f in files:
                     try:
                         dict_list = json.loads(df.to_json(orient='records'))
                         upsert_property_aircraft(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"現金":
+                    if 2 in df.columns:
+                        df.drop(2, axis=1, inplace=True)
+                    df.columns = models[u"現金"]["columns"]
+                    df['property_category'] = 'cash'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['total'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['total'] = df['total'].astype(float)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_cash(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"存款":
+                    if 4 in df.columns:
+                        df.drop(4, axis=1, inplace=True)
+                    df.columns = models[u"存款"]["columns"]
+                    df['property_category'] = 'deposit'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['total'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['total'] = df['total'].astype(float)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_deposit(dict_list)
                     except:
                         print df
                         raise
