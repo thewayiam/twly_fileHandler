@@ -65,6 +65,18 @@ def get_portion(value):
         return 1.0
     print value
 
+def upsert_property_bonds(dataset):
+    c.executemany('''
+        UPDATE property_bonds
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, symbol = %(symbol)s, owner = %(owner)s, dealer = %(dealer)s, quantity = %(quantity)s, face_value = %(face_value)s, currency = %(currency)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_bonds(legislator_id, date, category, name, symbol, owner, dealer, quantity, face_value, currency, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(symbol)s, %(owner)s, %(dealer)s, %(quantity)s, %(face_value)s, %(currency)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_bonds WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
 def upsert_property_stock(dataset):
     c.executemany('''
         UPDATE property_stock
@@ -169,6 +181,9 @@ models = {
     u"股票": {
         "columns": ['name', 'owner', 'quantity', 'face_value', 'currency', 'total']
     },
+    u"債券": {
+        "columns": ['name', 'symbol', 'owner', 'dealer', 'quantity', 'face_value', 'currency', 'total']
+    },
     u"土地": {
         "columns": ['name', 'area', 'share_portion', 'owner', 'register_date', 'register_reason', 'acquire_value']
     },
@@ -227,6 +242,27 @@ for f in files:
                     try:
                         dict_list = json.loads(df.to_json(orient='records'))
                         upsert_property_stock(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"債券":
+                    df.columns = models[u"債券"]["columns"]
+                    df['property_category'] = 'bonds'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df[['quantity', 'face_value', 'total']].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df[['quantity', 'face_value', 'total']].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['quantity'] = df['quantity'].astype(int)
+                    df[['face_value', 'total']] = df[['face_value', 'total']].astype(float)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_bonds(dict_list)
                     except:
                         print df
                         raise
