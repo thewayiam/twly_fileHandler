@@ -49,10 +49,15 @@ def get_name(df):
 
 def get_table_range(rows, targets):
     bookmarks = []
+    categories = [u'保險', u'備註']
     for target in targets:
         for i in range(0, len(rows)):
             if pd.notnull(rows[i]) and isinstance(rows[i], basestring):
-                if re.search(target, rows[i]):
+                if target in categories:
+                    match = re.search(u'%s\s*$' % target, rows[i])
+                else:
+                    match = re.search(target, rows[i])
+                if match:
                     bookmarks.append({"name": target, "position": i})
                     break
     return sorted(bookmarks, key=itemgetter('position'))
@@ -64,6 +69,42 @@ def get_portion(value):
     if re.search(u'全部', value):
         return 1.0
     print value
+
+def upsert_property_antique(dataset):
+    c.executemany('''
+        UPDATE property_antique
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, owner = %(owner)s, quantity = %(quantity)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_antique(legislator_id, date, category, name, owner, quantity, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(owner)s, %(quantity)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_antique WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
+def upsert_property_otherbonds(dataset):
+    c.executemany('''
+        UPDATE property_otherbonds
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, owner = %(owner)s, quantity = %(quantity)s, face_value = %(face_value)s, currency = %(currency)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_otherbonds(legislator_id, date, category, name, owner, quantity, face_value, currency, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(owner)s, %(quantity)s, %(face_value)s, %(currency)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_otherbonds WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
+def upsert_property_fund(dataset):
+    c.executemany('''
+        UPDATE property_fund
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, owner = %(owner)s, dealer = %(dealer)s, quantity = %(quantity)s, face_value = %(face_value)s, currency = %(currency)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_fund(legislator_id, date, category, name, owner, dealer, quantity, face_value, currency, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(name)s, %(owner)s, %(dealer)s, %(quantity)s, %(face_value)s, %(currency)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_fund WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
 
 def upsert_property_bonds(dataset):
     c.executemany('''
@@ -176,13 +217,22 @@ def upsert_property_deposit(dataset):
 conn = db_ly.con()
 c = conn.cursor()
 files = [f for f in glob.glob('data/*.xlsx')]
-categories = [u'土地', u'建物', u'船舶', u'汽車', u'航空器', u'現金', u'存款', u'有價證券', u'股票', u'債券', u'基金受益憑證', u'其他有價證券', u'具有相當價值之財產', u'保險', u'債權', u'債務', u'事業投資', u'備註', u'此致']
+categories = [u'土地', u'建物', u'船舶', u'汽車', u'航空器', u'現金', u'存款', u'有價證券', u'股票', u'債券', u'基金受益憑證', u'其他有價證券', u'珠寶、古董、字畫', u'具有相當價值之財產', u'保險', u'債權', u'債務', u'事業投資', u'備註', u'此致']
 models = {
     u"股票": {
         "columns": ['name', 'owner', 'quantity', 'face_value', 'currency', 'total']
     },
     u"債券": {
         "columns": ['name', 'symbol', 'owner', 'dealer', 'quantity', 'face_value', 'currency', 'total']
+    },
+    u"基金受益憑證": {
+        "columns": ['name', 'owner', 'dealer', 'quantity', 'face_value', 'currency', 'total']
+    },
+    u"其他有價證券": {
+        "columns": ['name', 'owner', 'quantity', 'face_value', 'currency', 'total']
+    },
+    u"具有相當價值之財產": {
+        "columns": ['name', 'quantity', 'owner', 'total']
     },
     u"土地": {
         "columns": ['name', 'area', 'share_portion', 'owner', 'register_date', 'register_reason', 'acquire_value']
@@ -228,7 +278,7 @@ for f in files:
                 df[1:] = df[ df[0] != df.iloc[0][0] ] # Remove rows who's first column equal to index fisrt column
                 df = df[1:]
                 df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop if column 0 or 1 empty
-                df.replace(to_replace=u'[\s，,’^《•★；;、_/\'-]', value='', inplace=True, regex=True)
+                df.replace(to_replace=u'[\s，,’^《•★■；;、_/\'-]', value='', inplace=True, regex=True)
                 if bookmarks[i]['name'].strip() == u"股票" or bookmarks[i]['name'].strip() == u"有價證券":
                     df.columns = models[u"股票"]["columns"]
                     df['property_category'] = 'stock'
@@ -247,6 +297,49 @@ for f in files:
                         raise
                     conn.commit()
                     output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"具有相當價值之財產" or bookmarks[i]['name'].strip() == u"珠寶、古董、字畫":
+                    print df
+                    df.columns = models[u"具有相當價值之財產"]["columns"]
+                    df['property_category'] = 'otherbonds'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_antique(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"其他有價證券":
+                    df.columns = models[u"其他有價證券"]["columns"]
+                    df['property_category'] = 'otherbonds'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['quantity'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['face_value'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['quantity'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['face_value'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['quantity'] = df['quantity'].astype(int)
+                    df[['face_value', 'total']] = df[['face_value', 'total']].astype(float)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_otherbonds(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
                 elif bookmarks[i]['name'].strip() == u"債券":
                     df.columns = models[u"債券"]["columns"]
                     df['property_category'] = 'bonds'
@@ -256,13 +349,41 @@ for f in files:
                     df['legislator_id'] = legislator_id
                     df['source_file'] = filename
                     df['index'] = df.index
-                    df[['quantity', 'face_value', 'total']].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
-                    df[['quantity', 'face_value', 'total']].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['quantity'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['face_value'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['quantity'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['face_value'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
                     df['quantity'] = df['quantity'].astype(int)
                     df[['face_value', 'total']] = df[['face_value', 'total']].astype(float)
                     try:
                         dict_list = json.loads(df.to_json(orient='records'))
                         upsert_property_bonds(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"基金受益憑證":
+                    df.columns = models[u"基金受益憑證"]["columns"]
+                    df['property_category'] = 'fund'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['quantity'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['face_value'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['quantity'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['face_value'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df[['quantity', 'face_value', 'total']] = df[['quantity', 'face_value', 'total']].astype(float)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_fund(dict_list)
                     except:
                         print df
                         raise
