@@ -70,6 +70,54 @@ def get_portion(value):
         return 1.0
     print value
 
+def upsert_property_investment(dataset):
+    c.executemany('''
+        UPDATE property_investment
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, owner = %(owner)s, company = %(company)s, address = %(address)s, register_date = %(register_date)s, register_reason = %(register_reason)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_investment(legislator_id, date, category, owner, company, address, register_date, register_reason, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(owner)s, %(company)s, %(address)s, %(register_date)s, %(register_reason)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_investment WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
+def upsert_property_debt(dataset):
+    c.executemany('''
+        UPDATE property_debt
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, species = %(species)s, debtor = %(debtor)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_debt(legislator_id, date, category, species, debtor, owner, register_date, register_reason, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(species)s, %(debtor)s, %(owner)s, %(register_date)s, %(register_reason)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_debt WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
+def upsert_property_claim(dataset):
+    c.executemany('''
+        UPDATE property_claim
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, species = %(species)s, debtor = %(debtor)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, total = %(total)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_claim(legislator_id, date, category, species, debtor, owner, register_date, register_reason, total, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(species)s, %(debtor)s, %(owner)s, %(register_date)s, %(register_reason)s, %(total)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_claim WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
+def upsert_property_insurance(dataset):
+    c.executemany('''
+        UPDATE property_insurance
+        SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, company = %(company)s, name = %(name)s, owner = %(owner)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+    c.executemany('''
+        INSERT INTO property_insurance(legislator_id, date, category, company, name, owner, source_file, index)
+        SELECT %(legislator_id)s, %(date)s, %(category)s, %(company)s, %(name)s, %(owner)s, %(source_file)s, %(index)s
+        WHERE NOT EXISTS (SELECT 1 FROM property_insurance WHERE index = %(index)s and source_file = %(source_file)s)
+    ''', dataset)
+
 def upsert_property_antique(dataset):
     c.executemany('''
         UPDATE property_antique
@@ -234,6 +282,18 @@ models = {
     u"具有相當價值之財產": {
         "columns": ['name', 'quantity', 'owner', 'total']
     },
+    u"保險": {
+        "columns": ['company', 'name', 'owner']
+    },
+    u"債權": {
+        "columns": ['species', 'owner', 'debtor', 'total', 'register_date', 'register_reason']
+    },
+    u"債務": {
+        "columns": ['species', 'debtor', 'owner', 'total', 'register_date', 'register_reason']
+    },
+    u"事業投資": {
+        "columns": ['owner', 'company', 'address', 'total', 'register_date', 'register_reason']
+    },
     u"土地": {
         "columns": ['name', 'area', 'share_portion', 'owner', 'register_date', 'register_reason', 'acquire_value']
     },
@@ -278,7 +338,7 @@ for f in files:
                 df[1:] = df[ df[0] != df.iloc[0][0] ] # Remove rows who's first column equal to index fisrt column
                 df = df[1:]
                 df.dropna(inplace=True, how='any', subset=[0, 1]) # Drop if column 0 or 1 empty
-                df.replace(to_replace=u'[\s，,’^《•★■；;、_/\'-]', value='', inplace=True, regex=True)
+                df.replace(to_replace=u'[\s，,’™^《•★■；;、_/\'-]', value='', inplace=True, regex=True)
                 if bookmarks[i]['name'].strip() == u"股票" or bookmarks[i]['name'].strip() == u"有價證券":
                     df.columns = models[u"股票"]["columns"]
                     df['property_category'] = 'stock'
@@ -297,10 +357,90 @@ for f in files:
                         raise
                     conn.commit()
                     output_list.extend(dict_list)
-                elif bookmarks[i]['name'].strip() == u"具有相當價值之財產" or bookmarks[i]['name'].strip() == u"珠寶、古董、字畫":
+                elif bookmarks[i]['name'].strip() == u"事業投資":
                     print df
+                    df.columns = models[u"事業投資"]["columns"]
+                    df['property_category'] = 'investment'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['total'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['total'] = df['total'].astype(float)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_investment(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"債務":
+                    df.columns = models[u"債務"]["columns"]
+                    df['property_category'] = 'debt'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['total'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['total'] = df['total'].astype(float)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_debt(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"債權":
+                    df.columns = models[u"債權"]["columns"]
+                    df['property_category'] = 'claim'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df['total'].replace(to_replace=u'[^\d.]', value='', inplace=True, regex=True)
+                    df['total'].replace(to_replace=u'^\.', value='', inplace=True, regex=True)
+                    df['total'] = df['total'].astype(float)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_claim(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"保險":
+                    if 3 in df.columns:
+                        df.drop(3, axis=1, inplace=True)
+                    df.columns = models[u"保險"]["columns"]
+                    df['property_category'] = 'insurance'
+                    df['category'] = 'normal'
+                    df['date'] = date
+                    df['legislator_name'] = name
+                    df['legislator_id'] = legislator_id
+                    df['source_file'] = filename
+                    df['index'] = df.index
+                    df.replace(to_replace=u'[.]', value='', inplace=True, regex=True)
+                    try:
+                        dict_list = json.loads(df.to_json(orient='records'))
+                        upsert_property_insurance(dict_list)
+                    except:
+                        print df
+                        raise
+                    conn.commit()
+                    output_list.extend(dict_list)
+                elif bookmarks[i]['name'].strip() == u"具有相當價值之財產" or bookmarks[i]['name'].strip() == u"珠寶、古董、字畫":
                     df.columns = models[u"具有相當價值之財產"]["columns"]
-                    df['property_category'] = 'otherbonds'
+                    df['property_category'] = 'antique'
                     df['category'] = 'normal'
                     df['date'] = date
                     df['legislator_name'] = name
