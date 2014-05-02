@@ -254,7 +254,7 @@ def not_voting_legislator_list(vote_id, vote_ad, vote_date):
 def insert_not_voting_record(legislator_id, vote_id):
     c.execute('''
         INSERT INTO vote_legislator_vote(legislator_id, vote_id)
-        SELECT %s,%s
+        SELECT %s, %s
         WHERE NOT EXISTS (SELECT legislator_id, vote_id FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)
     ''', (legislator_id, vote_id, legislator_id, vote_id))
 
