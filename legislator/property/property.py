@@ -71,6 +71,16 @@ def get_portion(value):
     print value
 
 def upsert_property_investment(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_investment
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and company = %(company)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_investment
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, owner = %(owner)s, company = %(company)s, address = %(address)s, register_date = %(register_date)s, register_reason = %(register_reason)s, total = %(total)s
@@ -83,6 +93,16 @@ def upsert_property_investment(dataset):
     ''', dataset)
 
 def upsert_property_debt(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_debt
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and total = %(total)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_debt
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, species = %(species)s, debtor = %(debtor)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, total = %(total)s
@@ -95,6 +115,16 @@ def upsert_property_debt(dataset):
     ''', dataset)
 
 def upsert_property_claim(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_claim
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and total = %(total)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_claim
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, species = %(species)s, debtor = %(debtor)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, total = %(total)s
@@ -107,6 +137,16 @@ def upsert_property_claim(dataset):
     ''', dataset)
 
 def upsert_property_insurance(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_insurance
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_insurance
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, company = %(company)s, name = %(name)s, owner = %(owner)s
@@ -119,6 +159,16 @@ def upsert_property_insurance(dataset):
     ''', dataset)
 
 def upsert_property_antique(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_antique
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_antique
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, owner = %(owner)s, quantity = %(quantity)s, total = %(total)s
@@ -131,6 +181,16 @@ def upsert_property_antique(dataset):
     ''', dataset)
 
 def upsert_property_otherbonds(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_otherbonds
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_otherbonds
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, owner = %(owner)s, quantity = %(quantity)s, face_value = %(face_value)s, currency = %(currency)s, total = %(total)s
@@ -143,6 +203,16 @@ def upsert_property_otherbonds(dataset):
     ''', dataset)
 
 def upsert_property_fund(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_fund
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_fund
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, owner = %(owner)s, dealer = %(dealer)s, quantity = %(quantity)s, face_value = %(face_value)s, currency = %(currency)s, total = %(total)s
@@ -155,6 +225,16 @@ def upsert_property_fund(dataset):
     ''', dataset)
 
 def upsert_property_bonds(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_bonds
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_bonds
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, symbol = %(symbol)s, owner = %(owner)s, dealer = %(dealer)s, quantity = %(quantity)s, face_value = %(face_value)s, currency = %(currency)s, total = %(total)s
@@ -167,6 +247,16 @@ def upsert_property_bonds(dataset):
     ''', dataset)
 
 def upsert_property_stock(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_stock
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_stock
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, owner = %(owner)s, quantity = %(quantity)s, face_value = %(face_value)s, currency = %(currency)s, total = %(total)s
@@ -179,6 +269,16 @@ def upsert_property_stock(dataset):
     ''', dataset)
 
 def upsert_property_land(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_land
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_land
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, area = %(area)s, share_portion = %(share_portion)s, portion = %(portion)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s, total = %(total)s
@@ -191,6 +291,16 @@ def upsert_property_land(dataset):
     ''', dataset)
 
 def upsert_property_building(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_building
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_building
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, area = %(area)s, share_portion = %(share_portion)s, portion = %(portion)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s, total = %(total)s
@@ -203,6 +313,16 @@ def upsert_property_building(dataset):
     ''', dataset)
 
 def upsert_property_boat(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_boat
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_boat
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, tonnage = %(tonnage)s, homeport = %(homeport)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s
@@ -215,6 +335,16 @@ def upsert_property_boat(dataset):
     ''', dataset)
 
 def upsert_property_car(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_car
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_car
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, capacity = %(capacity)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s
@@ -227,6 +357,16 @@ def upsert_property_car(dataset):
     ''', dataset)
 
 def upsert_property_aircraft(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_aircraft
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and name = %(name)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_aircraft
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, name = %(name)s, maker = %(maker)s, number = %(number)s, owner = %(owner)s, register_date = %(register_date)s, register_reason = %(register_reason)s, acquire_value = %(acquire_value)s
@@ -239,6 +379,16 @@ def upsert_property_aircraft(dataset):
     ''', dataset)
 
 def upsert_property_cash(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_cash
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and total = %(total)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_cash
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, currency = %(currency)s, owner = %(owner)s, total = %(total)s
@@ -251,6 +401,16 @@ def upsert_property_cash(dataset):
     ''', dataset)
 
 def upsert_property_deposit(dataset):
+    for data in dataset:
+        c.execute('''
+            SELECT *
+            FROM property_deposit
+            WHERE index = %(index)s and source_file != %(source_file)s and date = %(date)s and legislator_id = %(legislator_id)s and total = %(total)s
+        ''', data)
+        result = c.fetchone()
+        if result is not None:
+            print result
+            raise Exception('duplicated file!!')
     c.executemany('''
         UPDATE property_deposit
         SET legislator_id = %(legislator_id)s, date = %(date)s, category = %(category)s, bank = %(bank)s, deposit_type = %(deposit_type)s, currency = %(currency)s, owner = %(owner)s, total = %(total)s
@@ -358,7 +518,6 @@ for f in files:
                     conn.commit()
                     output_list.extend(dict_list)
                 elif bookmarks[i]['name'].strip() == u"事業投資":
-                    print df
                     df.columns = models[u"事業投資"]["columns"]
                     df['property_category'] = 'investment'
                     df['category'] = 'normal'
@@ -399,6 +558,7 @@ for f in files:
                     conn.commit()
                     output_list.extend(dict_list)
                 elif bookmarks[i]['name'].strip() == u"債權":
+                    print df
                     df.columns = models[u"債權"]["columns"]
                     df['property_category'] = 'claim'
                     df['category'] = 'normal'

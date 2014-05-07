@@ -31,16 +31,25 @@ def GetSessionROI(text):
     return ms ,me, uid
 
 def InsertVote(uid, sitting_id, vote_seq, content):
+    match = re.search(u'建請(?:院會|本院).*(?:請公決案)', content)
+    summary = ''
+    if match:
+        summary = match.group()
+    c.execute('''
+        UPDATE vote_vote
+        SET summary = %s
+        WHERE uid = %s
+    ''', (summary, uid))
     #c.execute('''
     #    UPDATE vote_vote
     #    SET content = %s, conflict = null
     #    WHERE uid = %s
     #''', (content, uid))
     c.execute('''
-        INSERT into vote_vote(uid, sitting_id, vote_seq, content, hits, likes, dislikes)
-        SELECT %s, %s, %s, %s, 0, 0, 0
+        INSERT into vote_vote(uid, sitting_id, vote_seq, content, summary, hits, likes, dislikes)
+        SELECT %s, %s, %s, %s, %s, 0, 0, 0
         WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE uid = %s)
-    ''', (uid, sitting_id, vote_seq, content, uid))
+    ''', (uid, sitting_id, vote_seq, content, summary, uid))
 
 def GetVoteContent(c, vote_seq, text):
     l = text.split()
@@ -272,11 +281,15 @@ def get_vote_results(vote_id):
     return [desc[0] for desc in c.description], c.fetchone() # return column name and value
 
 def update_vote_results(uid, results):
+    if results['agree'] > results['disagree']:
+        result = 'Passed'
+    else:
+        result = 'Not Passed'
     c.execute('''
         UPDATE vote_vote
-        SET results = %s
+        SET result = %s, results = %s
         WHERE uid = %s
-    ''', (results, uid))
+    ''', (result, results, uid))
 
 for vote_id, vote_ad, vote_date in vote_list():
     for legislator_id in not_voting_legislator_list(vote_id, vote_ad, vote_date):
