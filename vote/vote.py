@@ -31,7 +31,7 @@ def GetSessionROI(text):
     return ms ,me, uid
 
 def InsertVote(uid, sitting_id, vote_seq, content):
-    match = re.search(u'建請(?:院會|本院).*(?:請公決案)', content)
+    match = re.search(u'(?:建請|建請決議|並請|提請|擬請|要求)(?:\S){0,4}(?:院會|本院|\W{1,3}院|\W{1,3}部|\W{1,3}府).*(?:請公決案|敬請公決)', content)
     summary = ''
     if match:
         summary = match.group()
