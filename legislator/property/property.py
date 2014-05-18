@@ -925,3 +925,18 @@ for f in files:
 dump_data = json.dumps(output_list, sort_keys=True, indent=4, ensure_ascii=False)
 output_file.write(dump_data)
 output_file.close()
+
+
+def update_land_market_value(dataset):
+    c.execute('''
+        UPDATE property_land
+        SET  market_value = %(market_value)s
+        WHERE index = %(index)s and source_file = %(source_file)s
+    ''', dataset)
+
+dict_list = json.load(open('output/property_with_market_value.json'))
+for item in dict_list:
+    if item['property_category'] == 'land' and item.get('present_value'):
+        item.update({'market_value': item['present_value'] * item['total']})
+        update_land_market_value(item)
+conn.commit()
