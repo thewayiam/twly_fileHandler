@@ -1,3 +1,7 @@
+not found in lyapi_bills:, 801L16042, 17955:001
+not found in lyapi_bills:, 1761L16040, 17947:001
+not found in lyapi_bills:, 1761L16040, 17946:001
+not found in lyapi_bills:, 1043L15641, 17923:002
 not found in lyapi_bills:, 1722L15837, 17839:002
 not found in lyapi_bills:, 52L15452, 17808:011
 not found in lyapi_bills:, 979L, 17808:017
@@ -19,9 +23,9 @@ not found in lyapi_bills:, 1353L15137, 17738:004
 not found in lyapi_bills:, 1722L15837, 17795:002
 not found in lyapi_bills:, 1545L13223, 17795:002
 not found in lyapi_bills:, 1150L15640, 17772:002
+not found in lyapi_bills:, 1581L13531之二, 17692:345
 not found in lyapi_bills:, 407L13900之二, 17692:346
 not found in lyapi_bills:, 1650L14440之ㄧ, 17692:347
-not found in lyapi_bills:, 1581L13531之二, 17692:345
 not found in lyapi_bills:, 666L13810 666委13814, 17749:001
 not found in lyapi_bills:, 1353L15137, 17754:002
 not found in lyapi_bills:, 1722L15837, 17735:002
@@ -50,9 +54,9 @@ not found in lyapi_bills:, 23L14608之1, 17125:128
 not found in lyapi_bills:, 246L1461, 17080:105
 not found in lyapi_bills:, 618L13424, 17081:006
 not found in lyapi_bills:, 1545L13223, 17108:001
+not found in lyapi_bills:, 23L員14009, 17056:134
 not found in lyapi_bills:, 618L13424, 17056:005
 not found in lyapi_bills:, 270L14596, 17056:131
-not found in lyapi_bills:, 23L員14009, 17056:134
 not found in lyapi_bills:, 1545L13223, 17089:002
 not found in lyapi_bills:, 618L13424, 17099:001
 not found in lyapi_bills:, 870L14048, 16812:131

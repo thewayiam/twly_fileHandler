@@ -18,7 +18,7 @@ def GetSessionROI(text):
             第(?P<session>[\d]+)會期
             第(?P<times>[\d]+)次
             (臨時會第(?P<temptimes>[\d]+)次)?
-            會議
+            (?:會議|全院委員會)
         )
         議事錄
     ''', text, re.X) , None, None
