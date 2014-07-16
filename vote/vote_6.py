@@ -31,6 +31,15 @@ def GetSessionROI(text):
     return ms ,me, uid
 
 def InsertVote(uid, sitting_id, vote_seq, content):
+    match = re.search(u'(?:建請|建請決議|並請|提請|擬請|要求)(?:\S){0,4}(?:院會|本院|\W{1,3}院|\W{1,3}部|\W{1,3}府).*(?:請公決案|敬請公決)', content)
+    summary = ''
+    if match:
+        summary = match.group()
+    c.execute('''
+        UPDATE vote_vote
+        SET summary = %s
+        WHERE uid = %s
+    ''', (summary, uid))
     #c.execute('''
     #    UPDATE vote_vote
     #    SET content = %s, conflict = null
@@ -99,7 +108,7 @@ def LiterateVoter(c, sitting_dict, text, vote_id, decision):
             legislator_id = ly_common.GetLegislatorDetailId(c, legislator_id, sitting_dict["ad"])
             MakeVoteRelation(legislator_id, vote_id, decision)
         else:
-            print 'break at: %s' % name
+            #print 'break at: %s' % name
             break
 
 def IterEachDecision(c, votertext, sitting_dict, vote_id):
@@ -138,10 +147,17 @@ def IterVote(c, text, sitting_dict):
     mvoter = re.search(u'記名表決結果名單[:：]', text)
     if mvoter:
         votertext = text[mvoter.end():]
-        for match in re.finditer(u'附後[（(】。]', text):
+        anchors = []
+        for match in re.finditer(u'附後[（(]?[一二三四五六七八九十】。]+', text):
+            anchor = match.group()
+            if anchor in anchors:
+                continue
+            anchors.append(anchor)
             vote_seq = '%03d' % (int(vote_seq)+1)
             vote_id = '%s-%s' % (sitting_id, vote_seq)
             content = GetVoteContent(c, vote_seq, text[:match.start()+2])
+            print content
+            #raw_input()
             if content:
                 InsertVote(vote_id, sitting_id, vote_seq, content)
             if vote_id:
@@ -158,7 +174,6 @@ ad = 6
 sourcetext = codecs.open(u"立院議事錄06.txt", "r", "utf-8").read()
 ms ,me, uid = GetSessionROI(sourcetext)
 while ms:
-    print '\n' + ms.group('name')
     sitting_dict = {"uid":uid, "name": ms.group('name'), "ad": ms.group('ad'), "date": ly_common.GetDate(sourcetext), "session": ms.group('session') }
     ly_common.InsertSitting(c, sitting_dict)
     ly_common.FileLog(c, ms.group('name'))
@@ -269,11 +284,15 @@ def get_vote_results(vote_id):
     return [desc[0] for desc in c.description], c.fetchone() # return column name and value
 
 def update_vote_results(uid, results):
+    if results['agree'] > results['disagree']:
+        result = 'Passed'
+    else:
+        result = 'Not Passed'
     c.execute('''
         UPDATE vote_vote
-        SET results = %s
+        SET result = %s, results = %s
         WHERE uid = %s
-    ''', (results, uid))
+    ''', (result, results, uid))
 
 for vote_id, vote_ad, vote_date in vote_list():
     for legislator_id in not_voting_legislator_list(vote_id, vote_ad, vote_date):

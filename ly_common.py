@@ -39,7 +39,7 @@ def GetLegislatorId(c, name):
     r = c.fetchone()
     if r:
         return r[0]
-    print name
+    #print name
 
 def GetLegislatorDetailId(c, legislator_id, ad):
     c.execute('''
@@ -50,7 +50,7 @@ def GetLegislatorDetailId(c, legislator_id, ad):
     r = c.fetchone()
     if r:
         return r[0]
-    print legislator_id
+    #print legislator_id
 
 def GetLegislatorIdList(c, text):
     id_list, firstName = [], ''

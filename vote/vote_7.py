@@ -278,11 +278,16 @@ def get_vote_results(vote_id):
     return [desc[0] for desc in c.description], c.fetchone() # return column name and value
 
 def update_vote_results(uid, results):
+    if results['agree'] > results['disagree']:
+        result = 'Passed'
+    else:
+        result = 'Not Passed'
     c.execute('''
         UPDATE vote_vote
-        SET results = %s
+        SET result = %s, results = %s
         WHERE uid = %s
-    ''', (results, uid))
+    ''', (result, results, uid))
+
 
 for vote_id, vote_ad, vote_date in vote_list():
     for legislator_id in not_voting_legislator_list(vote_id, vote_ad, vote_date):
