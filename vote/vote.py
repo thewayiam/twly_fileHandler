@@ -30,11 +30,9 @@ def GetSessionROI(text):
         me = re.search(u'立法院第(\d){1,2}屆第[\d]{1,2}會期第[\d]{1,2}次(臨時會第\d次)?會議議事錄', text[1:])
     return ms ,me, uid
 
-def InsertVote(uid, sitting_id, vote_seq, content):
+def InsertVote(uid, sitting_id, vote_seq, category, content):
     match = re.search(u'(?:建請|建請決議|並請|提請|擬請|要求)(?:\S){0,4}(?:院會|本院|\W{1,3}院|\W{1,3}部|\W{1,3}府).*(?:請公決案|敬請公決)', content)
-    summary = ''
-    if match:
-        summary = match.group()
+    summary = match.group() if match and category != u'變更議程順序' else ''
     c.execute('''
         UPDATE vote_vote
         SET summary = %s
@@ -46,39 +44,60 @@ def InsertVote(uid, sitting_id, vote_seq, content):
     #    WHERE uid = %s
     #''', (content, uid))
     c.execute('''
-        INSERT into vote_vote(uid, sitting_id, vote_seq, content, summary, hits, likes, dislikes)
-        SELECT %s, %s, %s, %s, %s, 0, 0, 0
+        INSERT into vote_vote(uid, sitting_id, vote_seq, category, content, summary, hits, likes, dislikes)
+        SELECT %s, %s, %s, %s, %s, %s, 0, 0, 0
         WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE uid = %s)
-    ''', (uid, sitting_id, vote_seq, content, summary, uid))
+    ''', (uid, sitting_id, vote_seq, category, content, summary, uid))
 
-def GetVoteContent(c, vote_seq, text):
-    l = text.split()
-    if re.search(u'附後\S[\d]+\S', l[-2]) or re.search(u'^(其他事項|討論事項)$', l[-2]):
-        return l[-1]
-    if re.search(u'[：:]$', l[-2]) or re.search(u'(公決|照案|議案)[\S]{0,3}$', l[-2]) or re.search(u'^(決議|決定)[：:]', l[-1]):
-        return '\n'.join(l[-2:])
-    if re.search(u'[：:]$',l[-3]):
-        return '\n'.join(l[-3:])
-    i = -3
+def GetVoteContent(vote_seq, text):
+    # 傳入的text為"附後"該行以上的所有該次會議內容
+    lines = [line.strip() for line in text.split('\n') if line]
+    # 此附後的前一行: re.compile(u'附後\S[\d]+\S') or re.compile(u'(其他事項|討論事項)[：:]?$')
+    if re.search(u'附後\S[\d]+\S', lines[-2]) or re.search(u'(其他事項|討論事項)[：:]?$', lines[-2]):
+        return lines[-1]
+    # 此附後的前一行: re.compile(u'[：:]$') or re.compile(u'(公決|照案|議案)[\S]{0,3}$')
+    if re.search(u'[：:]$', lines[-2]) or re.search(u'(公決|照案|議案)\S{0,3}$', lines[-2]):
+        # 排除增列提議的順序案
+        if not re.search(u'^\d+', lines[-3]):
+            return '\n'.join(lines[-2:])
+    # 此附後所在行的開頭: re.compile(u'^(決議|決定)[：:]')
+    if re.search(u'^(決議|決定)[：:]', lines[-1]):
+        return '\n'.join(lines[-2:])
+    if re.search(u'[：:]$',lines[-3]):
+        return '\n'.join(lines[-3:])
+    base_line = -3
     # 法條修正提案列表類
-    if ly_common.GetLegislatorId(c, l[-2]) or ly_common.GetLegislatorId(c, l[-3]) or re.search(u'(案|審查)[\S]{0,3}$', l[-2]):
-        while not re.search(u'(通過|附表|如下)[\S]{1,2}$', l[i]):
-            i -= 1
-        return '\n'.join(l[i:])
+    if ly_common.GetLegislatorId(c, re.sub('\s', '', lines[-2])) or ly_common.GetLegislatorId(c, re.sub('\s', '', lines[-3])) or re.search(u'(案|審查)[\S]{0,3}$', lines[-2]):
+        for i in range(base_line, 0-len(lines), -1):
+            if re.search(u'^(附表|如下)\S{0,2}$', lines[i]):
+                for j in range(i, 0-len(lines), -1):
+                    if re.search(u'提議\W{0,4}(增列|報告事項|討論事項)', lines[j]):
+                        return '\n'.join(lines[j:])
+            if re.search(u'(通過|附表|如下)\S{1,2}$', lines[i]):
+                return '\n'.join(lines[i:])
+            if re.search(u'^增列報告事項$', lines[i]):
+                return '\n'.join(lines[i:])
+    # 提議增列列表類
+    for i in range(base_line, 0-len(lines), -1):
+        if re.search(u'提議\W{0,4}增列', lines[i]):
+            return '\n'.join(lines[i:])
     # 剩下的先向上找上一個附後，找兩附後之間以冒號作結，如找不到
     if vote_seq != '001':
-        while not re.search(u'附後\S[\d]+\S', l[i]):
-            i -= 1
-        for line in reversed(range(i-1,-3)):
-            if re.search(u'[：:]$', l[line]):
-                return '\n'.join(l[line:])
-        return '\n'.join(l[i+1:])
+        for i in range(base_line, 0-len(lines), -1):
+            if re.search(u'附後\S[\d]+\S', lines[i]):
+                base_line = i
+                break
+        for line in reversed(range(base_line-1, -3)):
+            if re.search(u'[：:]$', lines[line]):
+                return '\n'.join(lines[line:])
     # 最後方法
-    if re.search(u'^[\S]{1,5}在場委員', l[-1]):
-        return '\n'.join(l[-2:])
+    if re.search(u'^[\S]{1,5}在場委員', lines[-1]):
+        return '\n'.join(lines[-2:])
     else:
-        return l[-1]
-    print l[-1]
+        return lines[-1]
+    print 'WTF'
+    print text
+    raw_input()
 
 def MakeVoteRelation(legislator_id, vote_id, decision):
     c.execute('''
@@ -141,9 +160,10 @@ def IterVote(c, text, sitting_dict):
             else:
                 vote_seq = '001'
             vote_id = '%s-%s' % (sitting_id, vote_seq)
-            content = GetVoteContent(c, vote_seq, text[:match.start()+2])
+            content = GetVoteContent(vote_seq, text[:match.start()+2])
+            category = u'變更議程順序' if re.search(u'提議(變更議程|\W{0,4}增列)', content.split('\n')[0]) else ''
             if content:
-                InsertVote(vote_id, sitting_id, vote_seq, content)
+                InsertVote(vote_id, sitting_id, vote_seq, category, content)
             if vote_id:
                 mapprove, mreject, mquit = IterEachDecision(c, votertext, sitting_dict, vote_id)
             votertext = votertext[(mquit or mreject or mapprove).end():]
@@ -158,9 +178,10 @@ def IterVote(c, text, sitting_dict):
         votertext = text[mvoter.end():]
         vote_seq = '%03d' % (int(vote_seq)+1)
         vote_id = '%s-%s' % (sitting_id, vote_seq)
-        content = GetVoteContent(c, vote_seq, text[:mvoter.start()])
+        content = GetVoteContent(vote_seq, text[:mvoter.start()])
+        category = u''
         if content:
-            InsertVote(vote_id, sitting_id, vote_seq, content)
+            InsertVote(vote_id, sitting_id, vote_seq, category, content)
         if vote_id:
             mapprove, mreject, mquit = IterEachDecision(c, votertext, sitting_dict, vote_id)
 
