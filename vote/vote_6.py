@@ -32,22 +32,14 @@ def GetSessionROI(text):
 
 def InsertVote(uid, sitting_id, vote_seq, content):
     match = re.search(u'(?:建請|建請決議|並請|提請|擬請|要求)(?:\S){0,4}(?:院會|本院|\W{1,3}院|\W{1,3}部|\W{1,3}府).*(?:請公決案|敬請公決)', content)
-    summary = ''
-    if match:
-        summary = match.group()
-    c.execute('''
-        UPDATE vote_vote
-        SET summary = %s
-        WHERE uid = %s
-    ''', (summary, uid))
     #c.execute('''
     #    UPDATE vote_vote
     #    SET content = %s, conflict = null
     #    WHERE uid = %s
     #''', (content, uid))
     c.execute('''
-        INSERT into vote_vote(uid, sitting_id, vote_seq, content, hits, likes, dislikes)
-        SELECT %s, %s, %s, %s, 0, 0, 0
+        INSERT into vote_vote(uid, sitting_id, vote_seq, content)
+        SELECT %s, %s, %s, %s
         WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE uid = %s)
     ''', (uid, sitting_id, vote_seq, content, uid))
 
