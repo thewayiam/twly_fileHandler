@@ -8,53 +8,50 @@ import db_ly
 import ly_common
 
 
-def PartyPlatform(content, category, party):
+def personalPlatform(platform, id):
+    platform = '\n'.join(platform)
     c.execute('''
-        INSERT into legislator_platform(content, category, party)
-        SELECT %s, %s, %s
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_platform WHERE content = %s AND party = %s )
-    ''', (content, category, party, content, party))
+        UPDATE legislator_legislatordetail
+        SET platform = %s
+        WHERE id = %s
+    ''', (platform, id))
 
-def PersonalPlatform(legislator_id, content, category):
+def partyPlatform(platform, ad, party):
+    platform = '\n'.join(platform)
     c.execute('''
-        INSERT into legislator_platform(legislator_id, content, category)
-        SELECT %s, %s, %s
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_platform WHERE legislator_id = %s AND content = %s )
-    ''',(legislator_id, content, category, legislator_id, content))
+        UPDATE legislator_legislatordetail
+        SET platform = %s
+        WHERE ad = %s AND party = %s AND constituency = 0
+    ''', (platform, ad, party))
 
 conn = db_ly.con()
 c = conn.cursor()
-sourcetext = codecs.open(u"08立委政見.txt", "r", "utf-8")
-ly = []
+
+ad = 8
+sourcetext = codecs.open(u"%d立委政見.txt" % ad, "r", "utf-8")
+lines = []
 for line in sourcetext.readlines():
     line = line.strip()
+    lines.append(line)
     if not line:
-        continue
-    uid = ly_common.GetLegislatorId(c, line)
-    if uid: # if this line is name of legislators
-        legislator_id = ly_common.GetLegislatorDetailId(c, uid, 8)
-    else:
-        if legislator_id:
-            if re.search(u'[：]$', line):
-                PersonalPlatform(legislator_id, line, 0)
-            else:
-                PersonalPlatform(legislator_id, line, 1)
+        uid = ly_common.GetLegislatorId(c, lines[0])
+        if uid: # if this line is name of legislators
+            legislator_id = ly_common.GetLegislatorDetailId(c, uid, ad)
+        else:
+            print lines[0]
+            raw_input()
+        personalPlatform(lines[1:], legislator_id)
+        lines = []
 conn.commit()
-print u'08立委政見Succeed'
-sourcetext = codecs.open(u"08政黨政見.txt", "r", "utf-8")
-party = []
+print u'8立委政見Succeed'
+
+sourcetext = codecs.open(u"%d政黨政見.txt" % ad, "r", "utf-8")
+lines = []
 for line in sourcetext.readlines():
     line = line.strip()
+    lines.append(line)
     if not line:
-        continue
-    if len(line) < 7 and re.search(u'(?<!：)$', line):
-        party = line
-        print line
-    else:
-        if party:
-            if re.search(u'[：]$', line):
-                PartyPlatform(line, 0, party)
-            else:
-                PartyPlatform(line, 1, party)
+        partyPlatform(lines[1:], ad, lines[0])
+        lines = []
 conn.commit()
-print u'08政黨政見Succeed'
+print u'8政黨政見Succeed'
