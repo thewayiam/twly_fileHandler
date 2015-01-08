@@ -12,8 +12,33 @@ import db_ly
 import ly_common
 
 
+def normalize_constituency(constituency):
+    match = re.search(u'第(?P<num>.+)選(?:舉)?區', constituency)
+    if not match:
+        return 0
+    try:
+        return int(match.group('num'))
+    except:
+        print match.group('num')
+    ref = {u'一': 1, u'二': 2, u'三': 3, u'四': 4, u'五': 5, u'六': 6, u'七': 7, u'八': 8, u'九': 9}
+    if re.search(u'^\s*十\s*$', match.group('num')):
+        return 10
+    num = re.sub(u'^\s*十', u'一', match.group('num'))
+    num = re.sub(u'十', '', num)
+    digits = re.findall(u'(一|二|三|四|五|六|七|八|九)', num)
+    total, dec = 0, 1
+    for i in reversed(range(0, len(digits))):
+        total = total + int(ref.get(digits[i], 0)) * dec
+        dec = dec * 10
+    return total
+
+def normalize_person(person):
+    person['name'] = re.sub(u'[。˙・•．]', u'‧', person['name'])
+    person['name'] = re.sub(u'[　\s]', '', person['name'])
+    person['gender'] = re.sub(u'性', '', person.get('gender', ''))
+    return person
+
 def Legislator(legislator):
-    legislator['id'] = uuid.uuid4().hex
     if legislator.has_key('former_names'):
         legislator['former_names'] = '\n'.join(legislator['former_names'])
     else:
@@ -25,7 +50,7 @@ def Legislator(legislator):
     ''', legislator)
     c.execute('''
         INSERT INTO legislator_legislator(uid, name, former_names)
-        SELECT %(id)s, %(uid)s, %(name)s, %(former_names)s
+        SELECT %(uid)s, %(name)s, %(former_names)s
         WHERE NOT EXISTS (SELECT 1 FROM legislator_legislator WHERE uid = %(uid)s)
     ''', legislator)
 
@@ -35,21 +60,23 @@ def LegislatorDetail(uid, term, ideal_term_end_year):
             term[key] = '\n'.join(term[key])
     term.pop('county', None)
     if term.has_key('district'):
-        term['district'] = ' '.join([x for x in term['district']])
-    complement = {"uid":uid, "gender":'', "party":'', "caucus":'', "contacts":None, "county":term['constituency'], "district":'', "term_start":None, "term_end":{"date": '%04d-01-31' % int(ideal_term_end_year)}, "education":None, "experience":None, "remark":None, "image":'', "links":None}
+        term['district'] = u'，'.join([x for x in term['district']])
+    complement = {"uid": uid, "gender": '', "party": '', "caucus": '', "contacts": None, "county": term['constituency'], "constituency": 0, "district": '', "term_start": None, "term_end": {"date": '%04d-01-31' % int(ideal_term_end_year)}, "education": None, "experience": None, "remark": None, "image": '', "links": None}
     match = re.search(u'(?P<county>[\W]{1,2}(縣|市))', term['constituency'])
     if match:
         complement.update({"county": match.group('county')})
+    if term.get('constituency'):
+        term['constituency'] = normalize_constituency(term['constituency'])
     complement.update(term)
     c.execute('''
         UPDATE legislator_legislatordetail
         SET name = %(name)s, gender = %(gender)s, party = %(party)s, caucus = %(caucus)s, constituency = %(constituency)s, in_office = %(in_office)s, contacts = %(contacts)s, county = %(county)s, district = %(district)s, term_start = %(term_start)s, term_end = %(term_end)s, education = %(education)s, experience = %(experience)s, remark = %(remark)s, image = %(image)s, links = %(links)s
-        WHERE legislator_id = %(uid)s and ad = %(ad)s
+        WHERE legislator_id = %(uid)s AND ad = %(ad)s
     ''', complement)
     c.execute('''
-        INSERT into legislator_legislatordetail(legislator_id, ad, name, gender, party, caucus, constituency, county, district, in_office, contacts, term_start, term_end, education, experience, remark, image, links, hits)
-        SELECT %(uid)s, %(ad)s, %(name)s, %(gender)s, %(party)s, %(caucus)s, %(constituency)s, %(county)s, %(district)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s, 0
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislatordetail WHERE legislator_id = %(uid)s and ad = %(ad)s ) RETURNING id
+        INSERT into legislator_legislatordetail(legislator_id, ad, name, gender, party, caucus, constituency, county, district, in_office, contacts, term_start, term_end, education, experience, remark, image, links)
+        SELECT %(uid)s, %(ad)s, %(name)s, %(gender)s, %(party)s, %(caucus)s, %(constituency)s, %(county)s, %(district)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s
+        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislatordetail WHERE legislator_id = %(uid)s AND ad = %(ad)s)
     ''', complement)
 
 def Committees(committees):
@@ -65,21 +92,22 @@ def Legislator_Committees(legislator_id, committee):
     c.execute('''
         UPDATE committees_legislator_committees
         SET chair = %(chair)s
-        WHERE legislator_id = %(legislator_id)s and committee_id = %(name)s and ad = %(ad)s and session = %(session)s
+        WHERE legislator_id = %(legislator_id)s AND committee_id = %(name)s AND ad = %(ad)s AND session = %(session)s
     ''', complement)
     c.execute('''
         INSERT INTO committees_legislator_committees(legislator_id, committee_id, ad, session, chair)
         SELECT %(legislator_id)s, %(name)s, %(ad)s, %(session)s, %(chair)s
-        WHERE NOT EXISTS (SELECT 1 FROM committees_legislator_committees WHERE legislator_id = %(legislator_id)s and committee_id = %(name)s and ad = %(ad)s and session = %(session)s )
+        WHERE NOT EXISTS (SELECT 1 FROM committees_legislator_committees WHERE legislator_id = %(legislator_id)s AND committee_id = %(name)s AND ad = %(ad)s AND session = %(session)s )
     ''', complement)
 
 conn = db_ly.con()
 c = conn.cursor()
 
 f = codecs.open('no_committees.txt', 'w', encoding='utf-8')
-dict_list = json.load(open('../data/twly_crawler/data/merged.json'))
+dict_list = json.load(open('../data/twly_crawler/merged.json'))
 ideal_term_end_year = {"1":1993, "2":1996, "3":1999, "4":2002, "5":2005, "6":2008, "7":2012, "8":2016}
 for legislator in dict_list:
+    legislator = normalize_person(legislator)
     Legislator(legislator)
     for term in legislator["each_term"]:
         LegislatorDetail(legislator["uid"], term, ideal_term_end_year[str(term["ad"])])
@@ -99,11 +127,11 @@ import pandas.io.sql as psql
 
 
 for ad in range(1, 9):
-    df = psql.frame_query("SELECT name as label, county as category FROM legislator_legislatordetail where ad=%d" % ad, conn)
+    df = psql.read_sql("SELECT name as label, county as category FROM legislator_legislatordetail where ad=%d" % ad, conn)
     f = codecs.open('legislator_%d.json' % ad, 'w', encoding='utf-8')
     f.write(df.to_json(orient='records'))
     f.close()
 
-df = psql.frame_query("SELECT name FROM legislator_legislator", conn)
+df = psql.read_sql("SELECT name FROM legislator_legislator", conn)
 df.to_csv('legislators.csv', index=False)
 print 'Succeed'
