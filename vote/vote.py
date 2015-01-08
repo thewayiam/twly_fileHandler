@@ -185,6 +185,7 @@ ad = 8
 sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()
 ms ,me, uid = GetSessionROI(sourcetext)
 while ms:
+    break
     print '\n' + ms.group('name')
     sitting_dict = {"uid":uid, "name": ms.group('name'), "ad": ms.group('ad'), "date": ly_common.GetDate(sourcetext), "session": ms.group('session') }
     ly_common.InsertSitting(c, sitting_dict)
@@ -315,5 +316,47 @@ for vote_id, vote_ad, vote_date in vote_list():
 conn.commit()
 print 'done!'
 # <-- not voting & vote results end
+
+c.execute('''
+    SELECT
+        legislator_id,
+        COUNT(*) total,
+        SUM(CASE WHEN conflict = True THEN 1 ELSE 0 END) conflict,
+        SUM(CASE WHEN decision isnull THEN 1 ELSE 0 END) not_voting,
+        SUM(CASE WHEN decision = 1 THEN 1 ELSE 0 END) agree,
+        SUM(CASE WHEN decision = 0 THEN 1 ELSE 0 END) abstain,
+        SUM(CASE WHEN decision = -1 THEN 1 ELSE 0 END) disagree
+    FROM vote_legislator_vote
+    GROUP BY legislator_id
+''')
+response = c.fetchall()
+for r in response:
+    param = dict(zip(['total', 'conflict', 'not_voting', 'agree', 'abstain', 'disagree'], r[1:]))
+    c.execute('''
+        UPDATE legislator_legislatordetail
+        SET vote_param = %s
+        WHERE id = %s
+    ''', (param, r[0]))
+conn.commit()
+print 'Update Vote param of People'
+
+c.execute('''
+    SELECT
+        legislator_id,
+        COUNT(*) total,
+        SUM(CASE WHEN category = 'YS' AND status = 'absent' THEN 1 ELSE 0 END) absent
+    FROM legislator_attendance
+    GROUP BY legislator_id
+''')
+response = c.fetchall()
+for r in response:
+    param = dict(zip(['total', 'absent'], r[1:]))
+    c.execute('''
+        UPDATE legislator_legislatordetail
+        SET attendance_param = %s
+        WHERE id = %s
+    ''', (param, r[0]))
+conn.commit()
+print 'Update Attendance param of People'
 
 print 'Succeed'
