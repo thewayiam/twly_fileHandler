@@ -185,7 +185,6 @@ ad = 8
 sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()
 ms ,me, uid = GetSessionROI(sourcetext)
 while ms:
-    break
     print '\n' + ms.group('name')
     sitting_dict = {"uid":uid, "name": ms.group('name'), "ad": ms.group('ad'), "date": ly_common.GetDate(sourcetext), "session": ms.group('session') }
     ly_common.InsertSitting(c, sitting_dict)
