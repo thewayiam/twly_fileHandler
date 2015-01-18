@@ -120,18 +120,3 @@ for legislator in dict_list:
             f.write('no committees!!, uid: %s, name: %s, ad: %s\n' % (legislator["uid"], term["name"], term["ad"]))
 f.close()
 conn.commit()
-
-# Export auto-complete json file of legislator name & county
-from pandas import *
-import pandas.io.sql as psql
-
-
-for ad in range(1, 9):
-    df = psql.read_sql("SELECT name as label, county as category FROM legislator_legislatordetail where ad=%d" % ad, conn)
-    f = codecs.open('legislator_%d.json' % ad, 'w', encoding='utf-8')
-    f.write(df.to_json(orient='records'))
-    f.close()
-
-df = psql.read_sql("SELECT name FROM legislator_legislator", conn)
-df.to_csv('legislators.csv', index=False)
-print 'Succeed'
