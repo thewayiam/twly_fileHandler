@@ -9,6 +9,9 @@ from datetime import datetime
 def normalize_person(person):
     person['name'] = re.sub(u'[。˙・•．.]', u'‧', person['name'])
     person['name'] = re.sub(u'[　\s]', '', person['name'])
+    person['name'] = person['name'].title()
+    for wrong, right in [(u'^江啓臣$', u'江啟臣')]:
+        person['name'] = re.sub(wrong, right, person['name'])
     person['gender'] = re.sub(u'性', '', person.get('gender', ''))
     if person.get('party'):
         person['party'] = person['party'].strip()
