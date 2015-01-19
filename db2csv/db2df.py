@@ -7,10 +7,10 @@ from numpy import nan
 import pandas.io.sql as psql
 import pandas as pd
 import numpy as np
-import db_ly
+import db_settings
 
 
-conn = db_ly.con()
+conn = db_settings.con()
 #df_vote = psql.frame_query("SELECT * FROM vote_vote order by uid desc", conn)
 df_detail = psql.frame_query('''
     select

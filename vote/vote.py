@@ -6,7 +6,7 @@ import re
 import codecs
 import psycopg2
 from datetime import datetime
-import db_ly
+import db_settings
 import ly_common
 
 
@@ -179,7 +179,7 @@ def IterVote(c, text, sitting_dict):
         if vote_id:
             mapprove, mreject, mquit = IterEachDecision(c, votertext, sitting_dict, vote_id)
 
-conn = db_ly.con()
+conn = db_settings.con()
 c = conn.cursor()
 ad = 8
 sourcetext = codecs.open(u"立院議事錄08.txt", "r", "utf-8").read()

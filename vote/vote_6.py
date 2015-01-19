@@ -6,7 +6,7 @@ import re
 import codecs
 import psycopg2
 from datetime import datetime
-import db_ly
+import db_settings
 import ly_common
 
 
@@ -160,7 +160,7 @@ def IterVote(c, text, sitting_dict):
     else:
         print u'無記名表決結果名單'
 
-conn = db_ly.con()
+conn = db_settings.con()
 c = conn.cursor()
 ad = 6
 sourcetext = codecs.open(u"立院議事錄06.txt", "r", "utf-8").read()

@@ -7,7 +7,7 @@ import re
 import codecs
 import psycopg2
 import json
-import db_ly
+import db_settings
 import ly_common
 
 
@@ -46,7 +46,7 @@ def ttsMotions(motion):
         WHERE NOT EXISTS (SELECT 1 FROM bill_ttsmotions WHERE bill_id = %(bill_id)s AND sitting_id = %(sitting_id)s)
     ''', motion)
 
-conn = db_ly.con()
+conn = db_settings.con()
 c = conn.cursor()
 
 ad = 8

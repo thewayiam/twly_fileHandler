@@ -8,14 +8,14 @@ import codecs
 import psycopg2
 from psycopg2.extras import Json
 import json
-import db_ly
+import db_settings
 import ly_common
 
 
 def normalize_constituency(constituency):
     match = re.search(u'第(?P<num>.+)選(?:舉)?區', constituency)
     if not match:
-        return 0
+        return 1
     try:
         return int(match.group('num'))
     except:
@@ -31,12 +31,6 @@ def normalize_constituency(constituency):
         total = total + int(ref.get(digits[i], 0)) * dec
         dec = dec * 10
     return total
-
-def normalize_person(person):
-    person['name'] = re.sub(u'[。˙・•．]', u'‧', person['name'])
-    person['name'] = re.sub(u'[　\s]', '', person['name'])
-    person['gender'] = re.sub(u'性', '', person.get('gender', ''))
-    return person
 
 def Legislator(legislator):
     if legislator.has_key('former_names'):
@@ -64,7 +58,7 @@ def LegislatorDetail(uid, term, ideal_term_end_year):
     complement = {"uid": uid, "gender": '', "party": '', "caucus": '', "contacts": None, "county": term['constituency'], "constituency": 0, "district": '', "term_start": None, "term_end": {"date": '%04d-01-31' % int(ideal_term_end_year)}, "education": None, "experience": None, "remark": None, "image": '', "links": None}
     match = re.search(u'(?P<county>[\W]{1,2}(縣|市))', term['constituency'])
     if match:
-        complement.update({"county": match.group('county')})
+        complement.update({"county": re.sub(u'台', u'臺', match.group('county'))})
     if term.get('constituency'):
         term['constituency'] = normalize_constituency(term['constituency'])
     complement.update(term)
@@ -100,14 +94,14 @@ def Legislator_Committees(legislator_id, committee):
         WHERE NOT EXISTS (SELECT 1 FROM committees_legislator_committees WHERE legislator_id = %(legislator_id)s AND committee_id = %(name)s AND ad = %(ad)s AND session = %(session)s )
     ''', complement)
 
-conn = db_ly.con()
+conn = db_settings.con()
 c = conn.cursor()
 
 f = codecs.open('no_committees.txt', 'w', encoding='utf-8')
-dict_list = json.load(open('../data/twly_crawler/merged.json'))
+dict_list = json.load(open('../data/twly_crawler/data/merged.json'))
 ideal_term_end_year = {"1":1993, "2":1996, "3":1999, "4":2002, "5":2005, "6":2008, "7":2012, "8":2016}
 for legislator in dict_list:
-    legislator = normalize_person(legislator)
+    legislator = ly_common.normalize_person(legislator)
     Legislator(legislator)
     for term in legislator["each_term"]:
         LegislatorDetail(legislator["uid"], term, ideal_term_end_year[str(term["ad"])])

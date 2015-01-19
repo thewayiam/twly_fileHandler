@@ -4,7 +4,7 @@ import sys
 sys.path.append('../../')
 import re
 import codecs
-import db_ly
+import db_settings
 import ly_common
 
 
@@ -24,7 +24,7 @@ def partyPlatform(platform, ad, party):
         WHERE ad = %s AND party = %s AND constituency = 0
     ''', (platform, ad, party))
 
-conn = db_ly.con()
+conn = db_settings.con()
 c = conn.cursor()
 
 ad = 8

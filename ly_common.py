@@ -6,6 +6,20 @@ import json
 from datetime import datetime
 
 
+def normalize_person(person):
+    person['name'] = re.sub(u'[。˙・•．.]', u'‧', person['name'])
+    person['name'] = re.sub(u'[　\s]', '', person['name'])
+    person['gender'] = re.sub(u'性', '', person.get('gender', ''))
+    if person.get('party'):
+        person['party'] = person['party'].strip()
+        person['party'] = re.sub(u'無黨?$', u'無黨籍', person['party']) #無,無黨
+        person['party'] = re.sub(u'無黨籍.*', u'無黨籍', person['party']) #無黨籍及未經政黨推薦
+        person['party'] = re.sub(u'台灣', u'臺灣', person['party'])
+        person['party'] = re.sub(u'台聯黨', u'臺灣團結聯盟', person['party'])
+        person['party'] = re.sub(u'^國民黨$', u'中國國民黨', person['party'])
+        person['party'] = re.sub(u'^民進黨$', u'民主進步黨', person['party'])
+    return person
+
 def SittingsAbbreviation(key):
     d = json.load(open('util.json'))
     return d.get(key)

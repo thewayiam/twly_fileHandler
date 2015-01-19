@@ -7,7 +7,7 @@ import codecs
 import psycopg2
 from psycopg2.extras import Json
 import json
-import db_ly
+import db_settings
 import ly_common
 import pandas as pd
 
@@ -28,7 +28,7 @@ def PoliticalContributions(data_set):
         print data_set
         raise
 
-conn = db_ly.con()
+conn = db_settings.con()
 c = conn.cursor()
 ad = 8
 df = pd.read_csv(u'第八屆立法委員選舉經費.csv', index_col='name')
