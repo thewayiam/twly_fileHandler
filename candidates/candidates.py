@@ -99,7 +99,7 @@ def insertCandidates(candidate):
     complement = {"number": None, "birth": None, "gender": '', "party": '', "contact_details": None, "district": '', "elected": None, "votes": None, "education": None, "experience": None, "remark": None, "image": '', "links": None, "platform": ''}
     complement.update(candidate)
     c.execute('''
-        INSERT INTO candidates_candidates(uid, legislator_id, ad, number, name, birth, gender, party, constituency, county, district, elected, contact_details, votes, education, experience, remark, image, links, platform)
+        INSERT INTO candidates_candidates(uid, latest_term_id, ad, number, name, birth, gender, party, constituency, county, district, elected, contact_details, votes, education, experience, remark, image, links, platform)
         SELECT %(uid)s, %(term_id)s, %(ad)s, %(number)s, %(name)s, %(birth)s, %(gender)s, %(party)s, %(constituency)s, %(county)s, %(district)s, %(elected)s, %(contact_details)s, %(votes)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s, %(platform)s
         WHERE NOT EXISTS (SELECT 1 FROM candidates_candidates WHERE uid = %(uid)s AND ad = %(ad)s)
     ''', complement)
@@ -130,7 +130,6 @@ for f in files:
 conn.commit()
 
 def updateCandidates(candidate):
-    candidate['ad'] = ad
     c.execute('''
         SELECT *
         FROM candidates_candidates
@@ -152,9 +151,32 @@ def updateCandidates(candidate):
     complement.update(candidate)
     c.execute('''
         UPDATE candidates_candidates
-        SET number = %(number)s, birth = %(birth)s, gender = %(gender)s, votes = %(votes)s, votes_percentage = %(votes_percentage)s, elected = %(elected)s
+        SET number = %(number)s, birth = %(birth)s, gender = %(gender)s, votes = %(votes)s, votes_percentage = %(votes_percentage)s, elected = %(elected)s, legislator_id = %(legislator_id)s
         WHERE uid = %(uid)s AND ad = %(ad)s
     ''', complement)
+
+def elected_term(candidate):
+    c.execute('''
+        SELECT id
+        FROM legislator_legislatordetail
+        WHERE name = %(name)s and county = %(county)s and ad = %(ad)s
+    ''', candidate)
+    r = c.fetchone()
+    if r:
+        return r[0]
+    # English in name
+    # contains name, same county, latest ad
+    m = re.match(u'(?P<cht>.+?)[a-zA-Z]', candidate['name'])
+    candidate['name_like'] = m.group('cht') if m else candidate['name']
+    c.execute('''
+        SELECT id
+        FROM legislator_legislatordetail
+        WHERE name like %(name_like)s and county = %(county)s and ad = %(ad)s
+        ORDER BY ad DESC
+    ''', candidate)
+    r = c.fetchone()
+    print candidate
+    return r[0]
 
 files = [f for f in glob.glob('*/history/*.xls')]
 for f in files:
@@ -164,7 +186,7 @@ for f in files:
     df = pd.read_excel(f, sheetname=0, names=col_indexs, usecols=range(0, len(col_indexs)))
     df = df[df['name'].notnull()]
     df['area'] = df['area'].fillna(method='ffill') # deal with merged cell
-    df['elected'] = df['elected'].notnull()
+    df['elected'] = map(lambda x: True if re.search(u'[*]', x) else False, df['elected'])
     candidates = json.loads(df.to_json(orient='records'))
     for candidate in candidates:
         candidate = ly_common.normalize_person(candidate)
@@ -178,5 +200,7 @@ for f in files:
         else:
             candidate['constituency'] = 1
             candidate['county'] = candidate['area']
+        candidate['ad'] = ad
+        candidate['legislator_id'] = elected_term(candidate) if candidate['elected'] else None
         updateCandidates(candidate)
 conn.commit()
