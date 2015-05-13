@@ -31,7 +31,7 @@ def latest_term(candidate):
     # English in name
     # contains name, same county, latest ad
     m = re.match(u'(?P<cht>.+?)[a-zA-Z]', candidate['name'])
-    candidate['name_like'] = m.group('cht') if m else candidate['name']
+    candidate['name_like'] = '%s%%' % m.group('cht') if m else candidate['name']
     c.execute('''
         SELECT id
         FROM legislator_legislatordetail
@@ -167,7 +167,7 @@ def elected_term(candidate):
     # English in name
     # contains name, same county, latest ad
     m = re.match(u'(?P<cht>.+?)[a-zA-Z]', candidate['name'])
-    candidate['name_like'] = m.group('cht') if m else candidate['name']
+    candidate['name_like'] = '%s%%' % m.group('cht') if m else candidate['name']
     c.execute('''
         SELECT id
         FROM legislator_legislatordetail
