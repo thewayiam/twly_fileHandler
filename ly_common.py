@@ -8,7 +8,7 @@ from datetime import datetime
 
 def normalize_person(person):
     person['name'] = re.sub(u'[。˙・•．.]', u'‧', person['name'])
-    person['name'] = re.sub(u'[　\s]', '', person['name'])
+    person['name'] = re.sub(u'[　\s()（）]', '', person['name'])
     person['name'] = person['name'].title()
     for wrong, right in [(u'^江啓臣$', u'江啟臣')]:
         person['name'] = re.sub(wrong, right, person['name'])
@@ -108,12 +108,12 @@ def InsertSitting(c, sitting_dict):
     complement.update(sitting_dict)
     c.execute('''
         UPDATE sittings_sittings
-        SET name = %(name)s, date = %(date)s, ad = %(ad)s, session = %(session)s, committee = %(committee)s
+        SET name = %(name)s, date = %(date)s, ad = %(ad)s, session = %(session)s, committee = %(committee)s, links = %(links)s
         WHERE uid = %(uid)s
     ''', complement)
     c.execute('''
-        INSERT into sittings_sittings(uid, name, date, ad, session, committee)
-        SELECT %(uid)s, %(name)s, %(date)s, %(ad)s, %(session)s, %(committee)s
+        INSERT into sittings_sittings(uid, name, date, ad, session, committee, links)
+        SELECT %(uid)s, %(name)s, %(date)s, %(ad)s, %(session)s, %(committee)s, %(links)s
         WHERE NOT EXISTS (SELECT 1 FROM sittings_sittings WHERE uid = %(uid)s)
     ''', complement)
 
