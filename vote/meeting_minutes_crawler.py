@@ -39,5 +39,5 @@ class Spider(scrapy.Spider):
         f = codecs.open('t.txt', 'w', encoding='utf-8')
         f.write(soup.get_text())
         f.close()
-        cmd = u"sed -n '/議事錄/,/allans=0/p' t.txt | grep . > %s && rm t.txt" % response.request.meta['op']
+        cmd = u"sed -n '/議事錄/,/allans=0/p' t.txt | tr '傅萁' '傅崐萁' | grep . > %s && rm t.txt" % response.request.meta['op']
         subprocess.call(cmd, shell=True)
