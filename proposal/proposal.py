@@ -110,7 +110,5 @@ for f in files:
             proposerS, foo = GetProposer(singleSession[:proposerS.start()])
         text = text[me.end():]
         ms ,me, uid = GetSession(text)
-ly_common.remote_newline_in_sittings(c)
-ly_common.remote_newline_in_filelog(c)
 conn.commit()
 print 'Succeed'

@@ -103,14 +103,15 @@ def Attendance(c, sitting_dict, text, keyword, category, status):
             legislator_id = GetLegislatorDetailId(c, legislator_id, sitting_dict["ad"])
             AddAttendanceRecord(c, legislator_id, sitting_dict["uid"], category, status)
 
-def InsertSitting(c, sitting_dict):
+def InsertSitting(c, sitting_dict, update=True):
     complement = {"committee":'', "name":''}
     complement.update(sitting_dict)
-    c.execute('''
-        UPDATE sittings_sittings
-        SET name = %(name)s, date = %(date)s, ad = %(ad)s, session = %(session)s, committee = %(committee)s, links = %(links)s
-        WHERE uid = %(uid)s
-    ''', complement)
+    if update:
+        c.execute('''
+            UPDATE sittings_sittings
+            SET name = %(name)s, date = %(date)s, ad = %(ad)s, session = %(session)s, committee = %(committee)s, links = %(links)s
+            WHERE uid = %(uid)s
+        ''', complement)
     c.execute('''
         INSERT into sittings_sittings(uid, name, date, ad, session, committee, links)
         SELECT %(uid)s, %(name)s, %(date)s, %(ad)s, %(session)s, %(committee)s, %(links)s
@@ -123,14 +124,6 @@ def UpdateSitting(c, uid, name):
         SET name = %s
         WHERE uid = %s
     ''', (name, uid))
-
-def remote_newline_in_sittings(c):
-    c.execute('''
-        select uid, name
-        from sittings_sittings
-    ''')
-    for uid, name in c.fetchall():
-        UpdateSitting(c, uid, re.sub(u'[\s]', '', name))
 
 def UpdateFileLog(c, id, sitting):
     c.execute('''

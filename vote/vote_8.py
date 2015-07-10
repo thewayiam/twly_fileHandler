@@ -169,15 +169,25 @@ def IterVote(text, sitting_dict):
         if vote_id:
             mapprove, mreject, mquit = IterEachDecision(votertext, sitting_dict, vote_id)
 
+def sittingIdsInAd(ad):
+    c.execute('''
+        SELECT uid
+        FROM sittings_sittings
+        WHERE ad = %s
+    ''', (ad, ))
+    return [x[0] for x in c.fetchall()]
+
 conn = db_settings.con()
 c = conn.cursor()
 ad = 8
+sitting_ids = sittingIdsInAd(ad)
 dicts = json.load(open('minutes.json'))
 for meeting in dicts:
     print meeting['name']
     sourcetext = codecs.open(u'meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()
     ms, uid = SittingDict(meeting['name'])
-    if int(ms.group('ad')) != ad:
+    if int(ms.group('ad')) != ad or uid in sitting_ids:
+        print 'Skip: ' + meeting['name']
         continue
     date = ly_common.GetDate(sourcetext)
     if not date: # no content
