@@ -148,3 +148,11 @@ def attendance_param(c):
             SET attendance_param = %s
             WHERE id = %s
         ''', (param, r[0]))
+
+def sittingIdsInAd(ad):
+    c.execute('''
+        SELECT uid
+        FROM sittings_sittings
+        WHERE ad = %s AND name != ''
+    ''', (ad, ))
+    return [x[0] for x in c.fetchall()]

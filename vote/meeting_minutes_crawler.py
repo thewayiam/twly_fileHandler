@@ -10,7 +10,7 @@ import scrapy
 
 
 class Spider(scrapy.Spider):
-    name = "minutes"
+    name = "lci"
     allowed_domains = ["lci.ly.gov.tw/"]
     start_urls = ['http://lci.ly.gov.tw/LyLCEW/lcivAgendarecMore.action']
     download_delay = 1
@@ -39,5 +39,9 @@ class Spider(scrapy.Spider):
         f = codecs.open('t.txt', 'w', encoding='utf-8')
         f.write(soup.get_text())
         f.close()
-        cmd = u"sed -n '/議事錄/,/allans=0/p' t.txt | tr '傅萁' '傅崐萁' | grep . > %s && rm t.txt" % response.request.meta['op']
+        cmd = u"sed -n '/議事錄/,/allans=0/p' t.txt | tr '傅萁' '傅崐萁' | grep . > %s" % response.request.meta['op']
         subprocess.call(cmd, shell=True)
+        ret = subprocess.check_output("rm t.txt && wc -l %s" % response.request.meta['op'], shell=True)
+        if int(ret.split()[0]) < 5: # transform not finished file
+            subprocess.call("rm %s" % response.request.meta['op'], shell=True)
+

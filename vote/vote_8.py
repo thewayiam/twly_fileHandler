@@ -169,30 +169,21 @@ def IterVote(text, sitting_dict):
         if vote_id:
             mapprove, mreject, mquit = IterEachDecision(votertext, sitting_dict, vote_id)
 
-def sittingIdsInAd(ad):
-    c.execute('''
-        SELECT uid
-        FROM sittings_sittings
-        WHERE ad = %s
-    ''', (ad, ))
-    return [x[0] for x in c.fetchall()]
-
 conn = db_settings.con()
 c = conn.cursor()
 ad = 8
-sitting_ids = sittingIdsInAd(ad)
+sitting_ids = vote_common.sittingIdsInAd(ad)
 dicts = json.load(open('minutes.json'))
 for meeting in dicts:
     print meeting['name']
+    if not os.path.exists(op):
+        continue
     sourcetext = codecs.open(u'meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()
     ms, uid = SittingDict(meeting['name'])
     if int(ms.group('ad')) != ad or uid in sitting_ids:
         print 'Skip: ' + meeting['name']
         continue
-    date = ly_common.GetDate(sourcetext)
-    if not date: # no content
-        continue
-    sitting_dict = {"uid": uid, "name": meeting['name'], "ad": ms.group('ad'), "date": date, "session": ms.group('session'), "links": meeting['links']}
+    sitting_dict = {"uid": uid, "name": meeting['name'], "ad": ms.group('ad'), "date": ly_common.GetDate(sourcetext), "session": ms.group('session'), "links": meeting['links']}
     ly_common.InsertSitting(c, sitting_dict)
     ly_common.FileLog(c, meeting['name'])
     ly_common.Attendance(c, sitting_dict, sourcetext, u'出席委員[:：]?', 'YS', 'present')
