@@ -149,7 +149,7 @@ def attendance_param(c):
             WHERE id = %s
         ''', (param, r[0]))
 
-def sittingIdsInAd(ad):
+def sittingIdsInAd(c, ad):
     c.execute('''
         SELECT uid
         FROM sittings_sittings

@@ -13,14 +13,15 @@ def normalize_person(person):
     for wrong, right in [(u'^江啓臣$', u'江啟臣')]:
         person['name'] = re.sub(wrong, right, person['name'])
     person['gender'] = re.sub(u'性', '', person.get('gender', ''))
-    if person.get('party'):
-        person['party'] = person['party'].strip()
-        person['party'] = re.sub(u'無黨?$', u'無黨籍', person['party']) #無,無黨
-        person['party'] = re.sub(u'無黨籍.*', u'無黨籍', person['party']) #無黨籍及未經政黨推薦
-        person['party'] = re.sub(u'台灣', u'臺灣', person['party'])
-        person['party'] = re.sub(u'台聯黨', u'臺灣團結聯盟', person['party'])
-        person['party'] = re.sub(u'^國民黨$', u'中國國民黨', person['party'])
-        person['party'] = re.sub(u'^民進黨$', u'民主進步黨', person['party'])
+    for key in ['party', 'elected_party', 'caucus']:
+        if person.get(key):
+            person[key] = person[key].strip()
+            person[key] = re.sub(u'無黨?$', u'無黨籍', person[key]) #無,無黨
+            person[key] = re.sub(u'無黨籍.*', u'無黨籍', person[key]) #無黨籍及未經政黨推薦
+            person[key] = re.sub(u'台灣', u'臺灣', person[key])
+            person[key] = re.sub(u'台聯黨', u'臺灣團結聯盟', person[key])
+            person[key] = re.sub(u'^國民黨$', u'中國國民黨', person[key])
+            person[key] = re.sub(u'^民進黨$', u'民主進步黨', person[key])
     return person
 
 def SittingsAbbreviation(key):

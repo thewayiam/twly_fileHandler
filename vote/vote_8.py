@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 sys.path.append('../')
+import os
 import re
 import json
 import codecs
@@ -172,18 +173,26 @@ def IterVote(text, sitting_dict):
 conn = db_settings.con()
 c = conn.cursor()
 ad = 8
-sitting_ids = vote_common.sittingIdsInAd(ad)
+sitting_ids = vote_common.sittingIdsInAd(c, ad)
 dicts = json.load(open('minutes.json'))
 for meeting in dicts:
     print meeting['name']
-    if not os.path.exists(op):
+    #--> meeting info already there but meeting_minutes haven't publish
+    if not os.path.exists('meeting_minutes/%s.txt' % meeting['name']):
         continue
+    #<--
     sourcetext = codecs.open(u'meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()
     ms, uid = SittingDict(meeting['name'])
+    date = ly_common.GetDate(sourcetext)
     if int(ms.group('ad')) != ad or uid in sitting_ids:
         print 'Skip: ' + meeting['name']
         continue
-    sitting_dict = {"uid": uid, "name": meeting['name'], "ad": ms.group('ad'), "date": ly_common.GetDate(sourcetext), "session": ms.group('session'), "links": meeting['links']}
+    else:
+        if not date:
+            print 'Can not find meeting date from minutes, please check file!!'
+            raw_input()
+            continue
+    sitting_dict = {"uid": uid, "name": meeting['name'], "ad": ms.group('ad'), "date": date, "session": ms.group('session'), "links": meeting['links']}
     ly_common.InsertSitting(c, sitting_dict)
     ly_common.FileLog(c, meeting['name'])
     ly_common.Attendance(c, sitting_dict, sourcetext, u'出席委員[:：]?', 'YS', 'present')

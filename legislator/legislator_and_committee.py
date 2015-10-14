@@ -64,12 +64,12 @@ def LegislatorDetail(uid, term, ideal_term_end_year):
     complement.update(term)
     c.execute('''
         UPDATE legislator_legislatordetail
-        SET name = %(name)s, gender = %(gender)s, party = %(party)s, caucus = %(caucus)s, constituency = %(constituency)s, in_office = %(in_office)s, contacts = %(contacts)s, county = %(county)s, district = %(district)s, term_start = %(term_start)s, term_end = %(term_end)s, education = %(education)s, experience = %(experience)s, remark = %(remark)s, image = %(image)s, links = %(links)s
+        SET name = %(name)s, gender = %(gender)s, title = %(title)s, party = %(party)s, elected_party = %(elected_party)s, caucus = %(caucus)s, constituency = %(constituency)s, in_office = %(in_office)s, contacts = %(contacts)s, county = %(county)s, district = %(district)s, term_start = %(term_start)s, term_end = %(term_end)s, education = %(education)s, experience = %(experience)s, remark = %(remark)s, image = %(image)s, links = %(links)s
         WHERE legislator_id = %(uid)s AND ad = %(ad)s
     ''', complement)
     c.execute('''
-        INSERT into legislator_legislatordetail(legislator_id, ad, name, gender, party, caucus, constituency, county, district, in_office, contacts, term_start, term_end, education, experience, remark, image, links)
-        SELECT %(uid)s, %(ad)s, %(name)s, %(gender)s, %(party)s, %(caucus)s, %(constituency)s, %(county)s, %(district)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s
+        INSERT into legislator_legislatordetail(legislator_id, ad, name, gender, title, party, elected_party, caucus, constituency, county, district, in_office, contacts, term_start, term_end, education, experience, remark, image, links)
+        SELECT %(uid)s, %(ad)s, %(name)s, %(gender)s, %(title)s, %(party)s, %(elected_party)s, %(caucus)s, %(constituency)s, %(county)s, %(district)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s
         WHERE NOT EXISTS (SELECT 1 FROM legislator_legislatordetail WHERE legislator_id = %(uid)s AND ad = %(ad)s)
     ''', complement)
 

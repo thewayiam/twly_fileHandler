@@ -58,7 +58,7 @@ for bill in dict_list['entries']:
     bill['ad'] = ad
     Bill(bill)
     for motion in bill['motions']:
-        sitting_dict = {"uid": motion['sitting_id'], "ad": int(motion['sitting_id'].split('-')[0]), "session": int(motion['sitting_id'].split('-')[1][:2]), "date": motion['dates'][0]['date']}
+        sitting_dict = {"uid": motion['sitting_id'], "ad": int(motion['sitting_id'].split('-')[0]), "session": int(motion['sitting_id'].split('-')[1][:2]), "date": motion['dates'][0]['date'], "links": {}}
         ly_common.InsertSitting(c, sitting_dict, update=False)
         motion_dict = motion.copy()
         motion_dict.update({"bill_id": bill['bill_ref']})

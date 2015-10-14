@@ -129,6 +129,7 @@ for f in files:
             insertCandidates(candidate)
 conn.commit()
 
+# After election, update info that didn't exist before election
 def updateCandidates(candidate):
     c.execute('''
         SELECT *

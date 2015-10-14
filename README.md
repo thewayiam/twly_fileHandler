@@ -7,7 +7,12 @@ File handler of [立委投票指南](http://vote.ly.g0v.tw/)
 ======
 (1) [建立資料庫](https://github.com/g0v/twly-voter-guide#restore-data-into-database)       
 (2) ./db_ly.py：資料庫config請自行設定		
-(3) 建立立委主表
+(3) update git submodule
+```
+cd data/twly_crawler        
+git pull        
+```
+(4) 建立立委主表
 ```
 ./data/twly_crawler$ git pull origin master
 ./legislator$ python legislator_and_committee.py：
@@ -23,6 +28,7 @@ File handler of [立委投票指南](http://vote.ly.g0v.tw/)
 vote_8.py 的8是立法院屆期
 
 ```
+./vote$ rm minutes.json
 ./vote$ scrapy runspider meeting_minutes_crawler.py -o minutes.json
 ./vote$ python vote_8.py		
 ./vote$ python vote_7.py		
