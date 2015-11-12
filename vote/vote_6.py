@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 sys.path.append('../')
+import os
 import re
 import json
 import codecs
@@ -165,13 +166,21 @@ ad = 6
 dicts = json.load(open('minutes.json'))
 for meeting in dicts:
     print meeting['name']
-    sourcetext = codecs.open(u'meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()
+    #--> meeting info already there but meeting_minutes haven't publish
+    if not os.path.exists('meeting_minutes/%s.txt' % meeting['name']):
+        continue
+    #<--
+    sourcetext = codecs.open('meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()
     ms, uid = SittingDict(meeting['name'])
-    if int(ms.group('ad')) != ad:
-        continue
     date = ly_common.GetDate(sourcetext)
-    if not date: # no content
+    if int(ms.group('ad')) != ad:
+        print 'Skip: ' + meeting['name']
         continue
+    else:
+        if not date:
+            print 'Can not find meeting date from minutes, please check file!!'
+            raw_input()
+            continue
     sitting_dict = {"uid": uid, "name": meeting['name'], "ad": ms.group('ad'), "date": date, "session": ms.group('session'), "links": meeting['links']}
     ly_common.InsertSitting(c, sitting_dict)
     ly_common.FileLog(c, meeting['name'])
