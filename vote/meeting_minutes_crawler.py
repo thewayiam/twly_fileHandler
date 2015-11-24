@@ -25,7 +25,7 @@ class Spider(scrapy.Spider):
                 "dates": re.sub('\s', '', tr.xpath('td[4]/text()').extract()[0]).split(','),
                 "links": {
                     "pdf": urljoin(response.url, pdf_path),
-                    "html": 'http://lci.ly.gov.tw/LyLCEW/jsp/ldad000.jsp?irKey=&htmlType=agenda&fileName=html/%s' % re.sub('pdf$', 'htm', re.sub('/pdf', '', pdf_path))
+                    "html": 'http://lci.ly.gov.tw/LyLCEW/html/%s' % re.sub('pdf$', 'htm', re.sub('/pdf', '', pdf_path))
                 }
             }
             yield item
