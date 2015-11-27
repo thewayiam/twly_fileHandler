@@ -108,98 +108,20 @@ def insertCandidates(candidate):
 conn = db_settings.con()
 c = conn.cursor()
 
+ad = 9
 county_versions = json.load(open('county_versions.json'))
-files = [f for f in glob.glob('*/register.xls')]
+files = [f for f in glob.glob('%s/daily/*.xlsx' % ad)]
 for f in files:
-    ad = f.split('/')[0]
-    for sheet in [0, u'不分區']:
-        df = pd.read_excel(f, sheetname=sheet, names=['date', 'area', 'name', 'party', 'cec', 'remark'], usecols=[0, 1, 2, 3, 4, 5])
-        df = df[df['remark'].isnull() & df['name'].notnull()]
-        candidates = json.loads(df.to_json(orient='records'))
-        for candidate in candidates:
-            candidate = ly_common.normalize_person(candidate)
-            for target, replacement in [(u'選舉?區', u''), (u'全國$', u'全國不分區')]:
-                candidate['area'] = re.sub(target, replacement, candidate['area'])
-            match = re.search(u'第(?P<constituency>\d+)', candidate['area'])
-            if match:
-                candidate['constituency'] = match.group('constituency')
-                candidate['county'] = re.sub(u'第\d+', '', candidate['area'])
-            else:
-                candidate['constituency'] = 1
-                candidate['county'] = candidate['area']
-            insertCandidates(candidate)
-conn.commit()
-
-# After election, update info that didn't exist before election
-def updateCandidates(candidate):
-    c.execute('''
-        SELECT *
-        FROM candidates_terms
-        WHERE name = %(name)s and ad = %(ad)s and county = %(county)s
-    ''', candidate)
-    key = [desc[0] for desc in c.description]
-    r = c.fetchone()
-    if r:
-        complement = dict(zip(key, r))
+    if re.search('全國不分區', f):
+        df = pd.read_excel(f, names=['date', 'party', 'priority', 'name', 'area', 'cec', 'remark'], usecols=range(7))
     else:
-        print candidate
-        raw_input()
-    r = c.fetchone()
-    if r:
-        return r[0]
-    for key in ['education', 'experience', 'platform', 'remark']:
-        if candidate.has_key(key):
-            candidate[key] = '\n'.join(candidate[key])
-    complement.update(candidate)
-    c.execute('''
-        UPDATE candidates_candidates
-        SET birth = %(birth)s
-        WHERE uid = %(candidate_id)s
-    ''', complement)
-    c.execute('''
-        UPDATE candidates_terms
-        SET number = %(number)s, gender = %(gender)s, votes = %(votes)s, votes_percentage = %(votes_percentage)s, elected = %(elected)s, legislator_id = %(legislator_id)s
-        WHERE id = %(id)s
-    ''', complement)
-
-def elected_term(candidate):
-    c.execute('''
-        SELECT id
-        FROM legislator_legislatordetail
-        WHERE name = %(name)s and county = %(county)s and ad = %(ad)s
-    ''', candidate)
-    r = c.fetchone()
-    if r:
-        return r[0]
-    # English in name
-    # contains name, same county, latest ad
-    m = re.match(u'(?P<cht>.+?)[a-zA-Z]', candidate['name'])
-    candidate['name_like'] = '%s%%' % m.group('cht') if m else candidate['name']
-    c.execute('''
-        SELECT id
-        FROM legislator_legislatordetail
-        WHERE name like %(name_like)s and county = %(county)s and ad = %(ad)s
-        ORDER BY ad DESC
-    ''', candidate)
-    r = c.fetchone()
-    print candidate
-    return r[0]
-
-files = [f for f in glob.glob('*/history/*.xls')]
-for f in files:
-    print f
-    ad = f.split('/')[0]
-    col_indexs = ['area', 'name', 'number', 'gender', 'birth', 'party', 'votes', 'votes_percentage', 'elected', 'occupy']
-    df = pd.read_excel(f, sheetname=0, names=col_indexs, usecols=range(0, len(col_indexs)))
-    df = df[df['name'].notnull()]
-    df['area'] = df['area'].fillna(method='ffill') # deal with merged cell
-    df['elected'] = map(lambda x: True if re.search(u'[*]', x) else False, df['elected'])
+        df = pd.read_excel(f, names=['date', 'area', 'name', 'party', 'cec', 'remark'], usecols=range(6))
+    df = df[df['remark'].isnull() & df['name'].notnull()]
     candidates = json.loads(df.to_json(orient='records'))
     for candidate in candidates:
         candidate = ly_common.normalize_person(candidate)
-        candidate['birth'] = datetime.strptime(str(candidate['birth']), '%Y')
-        print candidate['area']
-        candidate['area'] = re.sub(u'選舉?區', u'', candidate['area'])
+        for target, replacement in [(u'選舉?區', u''), (u'全國$', u'全國不分區')]:
+            candidate['area'] = re.sub(target, replacement, candidate['area'])
         match = re.search(u'第(?P<constituency>\d+)', candidate['area'])
         if match:
             candidate['constituency'] = match.group('constituency')
@@ -207,7 +129,5 @@ for f in files:
         else:
             candidate['constituency'] = 1
             candidate['county'] = candidate['area']
-        candidate['ad'] = ad
-        candidate['legislator_id'] = elected_term(candidate) if candidate['elected'] else None
-        updateCandidates(candidate)
+        insertCandidates(candidate)
 conn.commit()
