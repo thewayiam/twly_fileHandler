@@ -7,63 +7,38 @@ import json
 import glob
 import codecs
 import psycopg2
-from psycopg2.extras import Json
-import pandas as pd
 
 import db_settings
 import ly_common
 
 
-def candidate_uid(candidate):
+def candidate_term_id(candidate):
     # same name, county, ad
     c.execute('''
-        SELECT uid
-        FROM candidates_candidates
-        WHERE name = %(name)s and county = %(county)s and ad = %(ad)s
-        ORDER BY ad DESC
+        SELECT id
+        FROM candidates_terms
+        WHERE name = %(name)s AND ad = %(ad)s AND county = %(county)s
     ''', candidate)
     r = c.fetchone()
     if r:
-        return r
-    # same name, ad, differrnt county
-    c.execute('''
-        SELECT uid
-        FROM candidates_candidates
-        WHERE name = %(name)s and ad = %(ad)s
-        ORDER BY ad DESC
-    ''', candidate)
-    r = c.fetchone()
-    if r:
-        return r
-    # English in name
-    # contains name, same county, ad
+        return r[0]
+    # English within name
     candidate['name_like'] = '%s%%' % re.sub('[a-zA-Z]', '', candidate['name'])
     c.execute('''
-        SELECT uid
-        FROM candidates_candidates
-        WHERE name like %(name_like)s and county = %(county)s and ad = %(ad)s
-        ORDER BY ad DESC
+        SELECT id
+        FROM candidates_terms
+        WHERE name like %(name_like)s AND ad = %(ad)s AND county = %(county)s
     ''', candidate)
     r = c.fetchone()
     if r:
-        return r
-    # contains name, different county, same ad
-    c.execute('''
-        SELECT uid
-        FROM candidates_candidates
-        WHERE name like %(name_like)s and ad = %(ad)s
-        ORDER BY ad DESC
-    ''', candidate)
-    r = c.fetchone()
-    if r:
-        return r
+        return r[0]
 
 def PoliticalContributions(data):
     try:
         c.execute('''
-            UPDATE candidates_candidates
+            UPDATE candidates_terms
             SET politicalcontributions = %(politicalcontributions)s
-            WHERE uid = %(uid)s
+            WHERE id = %(id)s
         ''', data)
     except Exception, e:
         print data
@@ -82,6 +57,6 @@ for f in glob.glob('*.json'):
         pc = {key: candidate[key] for key in ["in_total", "out_total", "balance"]}
         pc.update({'in': income, 'out': expenses})
         candidate['politicalcontributions'] = json.dumps(pc)
-        candidate['uid'] = candidate_uid(candidate)
+        candidate['id'] = candidate_term_id(candidate)
         PoliticalContributions(candidate)
 conn.commit()

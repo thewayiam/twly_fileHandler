@@ -54,27 +54,24 @@ def latest_term(candidate):
 
 def get_or_create_uid(person):
     c.execute('''
-        SELECT uid
-        FROM candidates_candidates
-        WHERE name = %(name)s and ad = %(ad)s and county = %(county)s
+        SELECT candidate_id
+        FROM candidates_terms
+        WHERE name = %(name)s
+        ORDER BY (
+            CASE
+                WHEN ad = %(ad)s AND county = %(county)s THEN 1
+                WHEN county = %(county)s THEN 2
+            END
+        )
+        limit 1
     ''', person)
     r = c.fetchone()
     if r:
         return r[0]
-    # same name, same county, different ad
     c.execute('''
         SELECT uid
         FROM candidates_candidates
-        WHERE name = %(name)s and ad != %(ad)s and county = %(county)s
-    ''', person)
-    r = c.fetchone()
-    if r:
-        return r[0]
-    # same name, different county, different ad
-    c.execute('''
-        SELECT uid
-        FROM candidates_candidates
-        WHERE name = %(name)s and ad != %(ad)s
+        WHERE name = %(name)s
     ''', person)
     r = c.fetchone()
     return r[0] if r else uuid.uuid4().hex
@@ -87,6 +84,7 @@ def insertCandidates(candidate):
             candidate['previous_county'] = county_change['from']
     candidate['term_id'] = latest_term(candidate)
     candidate['uid'] = get_or_create_uid(candidate)
+    candidate['id'] = '%s-%s' % (candidate['uid'], candidate['ad'])
     c.execute('''
         SELECT district
         FROM legislator_legislatordetail
@@ -99,9 +97,14 @@ def insertCandidates(candidate):
     complement = {"number": None, "birth": None, "gender": '', "party": '', "contact_details": None, "district": '', "elected": None, "votes": None, "education": None, "experience": None, "remark": None, "image": '', "links": None, "platform": ''}
     complement.update(candidate)
     c.execute('''
-        INSERT INTO candidates_candidates(uid, latest_term_id, ad, number, name, birth, gender, party, constituency, county, district, elected, contact_details, votes, education, experience, remark, image, links, platform)
-        SELECT %(uid)s, %(term_id)s, %(ad)s, %(number)s, %(name)s, %(birth)s, %(gender)s, %(party)s, %(constituency)s, %(county)s, %(district)s, %(elected)s, %(contact_details)s, %(votes)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s, %(platform)s
-        WHERE NOT EXISTS (SELECT 1 FROM candidates_candidates WHERE uid = %(uid)s AND ad = %(ad)s)
+        INSERT INTO candidates_candidates(uid, name, birth)
+        SELECT %(uid)s, %(name)s, %(birth)s
+        WHERE NOT EXISTS (SELECT 1 FROM candidates_candidates WHERE uid = %(uid)s)
+    ''', complement)
+    c.execute('''
+        INSERT INTO candidates_terms(id, candidate_id, latest_term_id, ad, number, name, gender, party, constituency, county, district, elected, contact_details, votes, education, experience, remark, image, links, platform)
+        SELECT %(id)s, %(uid)s, %(term_id)s, %(ad)s, %(number)s, %(name)s, %(gender)s, %(party)s, %(constituency)s, %(county)s, %(district)s, %(elected)s, %(contact_details)s, %(votes)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s, %(platform)s
+        WHERE NOT EXISTS (SELECT 1 FROM candidates_terms WHERE id = %(id)s)
     ''', complement)
 
 conn = db_settings.con()
@@ -133,7 +136,7 @@ conn.commit()
 def updateCandidates(candidate):
     c.execute('''
         SELECT *
-        FROM candidates_candidates
+        FROM candidates_terms
         WHERE name = %(name)s and ad = %(ad)s and county = %(county)s
     ''', candidate)
     key = [desc[0] for desc in c.description]
@@ -152,8 +155,13 @@ def updateCandidates(candidate):
     complement.update(candidate)
     c.execute('''
         UPDATE candidates_candidates
-        SET number = %(number)s, birth = %(birth)s, gender = %(gender)s, votes = %(votes)s, votes_percentage = %(votes_percentage)s, elected = %(elected)s, legislator_id = %(legislator_id)s
-        WHERE uid = %(uid)s AND ad = %(ad)s
+        SET birth = %(birth)s
+        WHERE uid = %(candidate_id)s
+    ''', complement)
+    c.execute('''
+        UPDATE candidates_terms
+        SET number = %(number)s, gender = %(gender)s, votes = %(votes)s, votes_percentage = %(votes_percentage)s, elected = %(elected)s, legislator_id = %(legislator_id)s
+        WHERE id = %(id)s
     ''', complement)
 
 def elected_term(candidate):
