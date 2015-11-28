@@ -20,8 +20,13 @@ def latest_term(candidate):
     c.execute('''
         SELECT id
         FROM legislator_legislatordetail
-        WHERE name = %(name)s and county = %(previous_county)s and ad < %(ad)s
-        ORDER BY ad DESC
+        WHERE name = %(name)s and ad < %(ad)s
+        ORDER BY ad DESC, (
+            CASE
+                WHEN county = %(previous_county)s THEN 1
+            END
+        )
+        limit 1
     ''', candidate)
     r = c.fetchone()
     if r:
@@ -33,18 +38,12 @@ def latest_term(candidate):
     c.execute('''
         SELECT id
         FROM legislator_legislatordetail
-        WHERE name like %(name_like)s and county = %(previous_county)s and ad < %(ad)s
-        ORDER BY ad DESC
-    ''', candidate)
-    r = c.fetchone()
-    if r:
-        return r
-    # contains name, different county, latest ad
-    c.execute('''
-        SELECT id
-        FROM legislator_legislatordetail
         WHERE name like %(name_like)s and ad < %(ad)s
-        ORDER BY ad DESC
+        ORDER BY ad DESC, (
+            CASE
+                WHEN county = %(previous_county)s THEN 1
+            END
+        )
     ''', candidate)
     r = c.fetchone()
     if r:
@@ -54,22 +53,23 @@ def get_or_create_uid(person):
     c.execute('''
         SELECT candidate_id
         FROM candidates_terms
-        WHERE name = %(name)s
-        ORDER BY (
-            CASE
-                WHEN ad = %(ad)s AND county = %(county)s THEN 1
-                WHEN county = %(county)s THEN 2
-            END
-        )
-        limit 1
+        WHERE name = %(name)s and ad = %(ad)s and county = %(county)s and constituency = %(constituency)s
+        LIMIT 1
     ''', person)
     r = c.fetchone()
     if r:
         return r[0]
     c.execute('''
-        SELECT uid
-        FROM candidates_candidates
-        WHERE name = %(name)s
+        SELECT candidate_id
+        FROM candidates_terms
+        WHERE name = %(name)s and ad != %(ad)s
+        ORDER BY (
+            CASE
+                WHEN county = %(county)s and constituency = %(constituency)s THEN 1
+                WHEN county = %(county)s THEN 2
+            END
+        )
+        LIMIT 1
     ''', person)
     r = c.fetchone()
     return r[0] if r else uuid.uuid4().hex
@@ -77,7 +77,7 @@ def get_or_create_uid(person):
 def insertCandidates(candidate):
     candidate['ad'] = ad
     candidate['previous_county'] = candidate['county']
-    for county_change in county_versions.get(ad, []):
+    for county_change in county_versions.get(str(ad), []):
         if candidate['county'] == county_change['to']:
             candidate['previous_county'] = county_change['from']
     candidate['term_id'] = latest_term(candidate)
