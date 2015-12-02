@@ -23,7 +23,8 @@ def candidate_term_id(candidate):
     if r:
         return r[0]
     # English within name
-    candidate['name_like'] = '%s%%' % re.sub('[a-zA-Z]', '', candidate['name'])
+    m = re.match(u'(?P<cht>.+?)[a-zA-Z]', candidate['name'])
+    candidate['name_like'] = '%s%%' % m.group('cht') if m else '%s%%' % candidate['name']
     c.execute('''
         SELECT id
         FROM candidates_terms

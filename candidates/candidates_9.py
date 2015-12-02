@@ -34,7 +34,7 @@ def latest_term(candidate):
     # English in name
     # contains name, same county, latest ad
     m = re.match(u'(?P<cht>.+?)[a-zA-Z]', candidate['name'])
-    candidate['name_like'] = '%s%%' % m.group('cht') if m else candidate['name']
+    candidate['name_like'] = '%s%%' % m.group('cht') if m else '%s%%' % candidate['name']
     c.execute('''
         SELECT id
         FROM legislator_legislatordetail
@@ -111,7 +111,7 @@ c = conn.cursor()
 
 ad = 9
 county_versions = json.load(open('county_versions.json'))
-files = [f for f in glob.glob('%s/daily/*.xlsx' % ad)]
+files = [f for f in glob.glob('%s/*.xlsx' % ad)]
 for f in files:
     if re.search('全國不分區', f):
         df = pd.read_excel(f, names=['date', 'party', 'priority', 'name', 'area', 'cec', 'remark'], usecols=[0, 1, 2, 3, 5, 6, 7])

@@ -34,7 +34,7 @@ def latest_term(candidate):
     # English in name
     # contains name, same county, latest ad
     m = re.match(u'(?P<cht>.+?)[a-zA-Z]', candidate['name'])
-    candidate['name_like'] = '%s%%' % m.group('cht') if m else candidate['name']
+    candidate['name_like'] = '%s%%' % m.group('cht') if m else '%s%%' % candidate['name']
     c.execute('''
         SELECT id
         FROM legislator_legislatordetail
@@ -144,9 +144,6 @@ def updateCandidates(candidate):
     else:
         print candidate
         raw_input()
-    r = c.fetchone()
-    if r:
-        return r[0]
     for key in ['education', 'experience', 'platform', 'remark']:
         if candidate.has_key(key):
             candidate[key] = '\n'.join(candidate[key])

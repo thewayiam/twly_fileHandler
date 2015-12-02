@@ -7,7 +7,7 @@ from datetime import datetime
 
 
 def normalize_person(person):
-    person['name'] = re.sub(u'[。˙・•．.]', u'‧', person['name'])
+    person['name'] = re.sub(u'[。˙・･•．.]', u'‧', person['name'])
     person['name'] = re.sub(u'[　\s()（）]', '', person['name'])
     person['name'] = person['name'].title()
     for wrong, right in [(u'^江啓臣$', u'江啟臣')]:
