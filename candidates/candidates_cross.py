@@ -60,7 +60,6 @@ except:
         r_another = json.load(infile)
 finally:
     for councilor_candidate in r_another:
-        print councilor_candidate
         c.execute('''
             UPDATE candidates_terms
             SET councilor = %s
