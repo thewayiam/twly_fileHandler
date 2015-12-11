@@ -91,6 +91,40 @@ def get_vote_results(c, vote_id):
     return [desc[0] for desc in c.description], c.fetchone() # return column name and value
 
 def update_vote_results(c, uid, results):
+    c.execute('''
+        select json_agg(row)
+        from (
+        select decision, json_agg(party_list) as party_list, sum(count)
+        from (
+        select decision, json_build_object('party', party, 'legislators', legislators, 'count', json_array_length(legislators)) as party_list, json_array_length(legislators) as count
+        from (
+        select decision, party, json_agg(detail) as legislators
+        from (
+        select decision, party, json_build_object('name', name, 'legislator_id', legislator_id) as detail
+        from (
+            select
+            case
+            when vl.decision = 1 then '贊成'
+            when vl.decision = -1 then '反對'
+            when vl.decision = 0 then '棄權'
+            when vl.decision isnull then '沒投票'
+            end as decision,
+            d.name as party,
+            l.name,
+            l.legislator_id
+            from legislator_legislatordetail l, jsonb_to_recordset(l.party) d(name text, start_at date, end_at date), vote_vote v , vote_legislator_vote vl, sittings_sittings s
+            where v.uid = %s and v.uid = vl.vote_id and vl.legislator_id = l.id and v.sitting_id = s.uid and d.start_at < s.date and d.end_at > s.date
+        ) _
+        ) __
+        group by decision, party
+        order by decision, party
+        ) ___
+        ) ____
+        group by decision
+        order by sum desc
+        ) row
+    ''', [uid])
+    decisions = c.fetchone()[0]
     if results['agree'] > results['disagree']:
         result = 'Passed'
     else:
@@ -99,7 +133,7 @@ def update_vote_results(c, uid, results):
         UPDATE vote_vote
         SET result = %s, results = %s
         WHERE uid = %s
-    ''', (result, results, uid))
+    ''', (result, decisions, uid))
 
 def not_voting_and_results(c):
     for vote_id, vote_ad, vote_date in vote_list(c):
