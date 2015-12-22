@@ -140,3 +140,17 @@ def remote_newline_in_filelog(c):
     ''')
     for id, sitting in c.fetchall():
         UpdateFileLog(c, id, re.sub(u'[\s]', '', sitting))
+
+def SittingDict(text):
+    ms = re.search(u'''
+        第(?P<ad>[\d]+)\s?屆
+        第(?P<session>[\d]+)\s?會期
+        第(?P<times>[\d]+)\s?次
+        (臨時會第(?P<temptimes>[\d]+)\s?次)?
+        (?:會議|全院委員會)
+    ''', text, re.X)
+    if ms.group('temptimes'):
+        uid = '%02d-%02dT%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('times')), int(ms.group('temptimes')))
+    else:
+        uid = '%02d-%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('times')))
+    return ms, uid

@@ -13,20 +13,6 @@ import ly_common
 import vote_common
 
 
-def SittingDict(text):
-    ms = re.search(u'''
-        第(?P<ad>[\d]+)屆
-        第(?P<session>[\d]+)會期
-        第(?P<times>[\d]+)次
-        (臨時會第(?P<temptimes>[\d]+)次)?
-        (?:會議|全院委員會)
-    ''', text, re.X)
-    if ms.group('temptimes'):
-        uid = '%02d-%02dT%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('times')), int(ms.group('temptimes')))
-    else:
-        uid = '%02d-%02d-YS-%02d' % (int(ms.group('ad')), int(ms.group('session')), int(ms.group('times')))
-    return ms, uid
-
 def InsertVote(uid, sitting_id, vote_seq, category, content):
     c.execute('''
         INSERT into vote_vote(uid, sitting_id, vote_seq, category, content)
@@ -182,7 +168,7 @@ for meeting in dicts:
         continue
     #<--
     sourcetext = codecs.open(u'meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()
-    ms, uid = SittingDict(meeting['name'])
+    ms, uid = ly_common.SittingDict(meeting['name'])
     date = ly_common.GetDate(sourcetext)
     if int(ms.group('ad')) != ad or uid in sitting_ids:
         print 'Skip: ' + meeting['name']
