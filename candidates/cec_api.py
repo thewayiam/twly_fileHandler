@@ -37,6 +37,7 @@ for candidate in r.json()[u"區域立委公報"]:
     candidate['ad'] = re.search(u'第(?P<ad>\d+)屆', candidate['electiondefinename']).group(1)
     match = re.search(u'第(?P<constituency>\d+)選舉?區', candidate['sessionname'])
     candidate['constituency'] = match.group('constituency') if match else 1
+    candidate['candidatename'] = re.sub(u'黄玉芬', u'黃玉芬', candidate['candidatename'])
     if candidate.get('drawno'):
         candidate['gender'] = u'男'if candidate['gender'] == 'M' else u'女'
         updateCandidates(candidate)
