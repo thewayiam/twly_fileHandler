@@ -41,4 +41,14 @@ for candidate in r.json()[u"區域立委公報"]:
     if candidate.get('drawno'):
         candidate['gender'] = u'男'if candidate['gender'] == 'M' else u'女'
         updateCandidates(candidate)
+for candidate in [(u'桃園市', 5, u'羅文欽'), (u'桃園市', 3, u'黃志浩')]:
+    c.execute('''
+        delete from candidates_terms
+        where ad = 9 and county = %s and constituency = %s and name = %s returning candidate_id
+    ''', (candidate[0], candidate[1], candidate[2]))
+    candidate_id = c.fetchone()[0]
+    c.execute('''
+        delete from candidates_candidates
+        where uid = %s
+    ''', [candidate_id])
 conn.commit()
