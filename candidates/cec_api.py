@@ -81,4 +81,17 @@ for datatype, key in [('4', u'山地原住民立委'), ('5', u'平地原住民�
         if candidate.get('drawno'):
             candidate['gender'] = u'男' if candidate['gender'] == 'M' else u'女'
             updateCandidates(candidate)
+
+for datatype, key in [('2', u'全國不分區及僑居國外國民立委公報')]:
+    r = requests.get('http://2016.cec.gov.tw/opendata/cec2016/getJson?dataType=%s' % datatype)
+    for candidate in r.json()[key]:
+        candidate['cec_data'] = json.dumps(candidate)
+        candidate['ad'] = re.search(u'第(?P<ad>\d+)屆', candidate['electiondefinename']).group(1)
+        candidate['constituency'] = 1
+        candidate['candidatename'] = re.sub(u'[。˙・･•．.]', u'‧', candidate['candidatename'])
+        candidate['candidatename'] = re.sub(u'[　\s()（）^]', '', candidate['candidatename'])
+        candidate['cityname'] = u'僑居國外國民' if re.search(u'(連元章|童惠珍)', candidate['candidatename']) else u'全國不分區'
+        if candidate.get('drawno'):
+            candidate['gender'] = u'男' if candidate['gender'] == 'M' else u'女'
+            updateCandidates(candidate)
 conn.commit()
