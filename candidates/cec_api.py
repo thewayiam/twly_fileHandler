@@ -147,7 +147,7 @@ for county, v in counties.items():
                         'district': district,
                         'villages': villages
                     })
-        duplicate_detail = sorted(duplicate_detail, key=lambda x: [x['district'], x['constituency']])
+        duplicate_detail = sorted(duplicate_detail, key=lambda x: [x['district'], len(x['villages'])])
         dv = [{'district': d, 'detail': []} for d in {x['district'] for x in duplicate_detail}]
         for d in duplicate_detail:
             for u in dv:
@@ -160,6 +160,11 @@ for county, v in counties.items():
         counties[county].update({'duplicated': dv})
 with codecs.open('election_region_2016.json', 'w', encoding='utf-8') as outfile:
     outfile.write(json.dumps(counties, indent=2, ensure_ascii=False))
+c.execute('''
+    update elections_elections
+    set data = %s
+    where id = %s
+''', (counties, str(ad)))
 c.execute('''
     INSERT INTO elections_elections(id, data)
     SELECT %s, %s
