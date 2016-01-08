@@ -46,7 +46,6 @@ c = conn.cursor()
 ad = 9
 
 for datatype, key in [('3', u'區域立委公報')]:
-    break
     r = requests.get('http://2016.cec.gov.tw/opendata/cec2016/getJson?dataType=%s' % datatype)
     for candidate in r.json()[key]:
         candidate['cec_data'] = json.dumps(candidate)
@@ -59,7 +58,6 @@ for datatype, key in [('3', u'區域立委公報')]:
             updateCandidates(candidate)
 # unqualify
 for candidate in [(u'桃園市', 5, u'羅文欽'), (u'桃園市', 3, u'黃志浩')]:
-    break
     c.execute('''
         delete from candidates_terms
         where ad = %s and county = %s and constituency = %s and name = %s returning candidate_id
@@ -74,7 +72,6 @@ for candidate in [(u'桃園市', 5, u'羅文欽'), (u'桃園市', 3, u'黃志浩
 #
 
 for datatype, key in [('4', u'山地原住民立委'), ('5', u'平地原住民立委')]:
-    break
     r = requests.get('http://2016.cec.gov.tw/opendata/cec2016/getJson?dataType=%s' % datatype)
     for candidate in r.json()[key]:
         candidate['cec_data'] = json.dumps(candidate)
@@ -89,7 +86,6 @@ for datatype, key in [('4', u'山地原住民立委'), ('5', u'平地原住民�
             updateCandidates(candidate)
 
 for datatype, key in [('2', u'全國不分區及僑居國外國民立委公報')]:
-    break
     r = requests.get('http://2016.cec.gov.tw/opendata/cec2016/getJson?dataType=%s' % datatype)
     for candidate in r.json()[key]:
         candidate['cec_data'] = json.dumps(candidate)
