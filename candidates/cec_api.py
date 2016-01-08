@@ -4,8 +4,10 @@ import sys
 sys.path.append('../')
 import re
 import json
+import codecs
 import requests
 from datetime import datetime
+import collections
 
 import ly_common
 import db_settings
@@ -41,8 +43,10 @@ def updateCandidates(candidate):
 
 conn = db_settings.con()
 c = conn.cursor()
+ad = 9
 
 for datatype, key in [('3', u'區域立委公報')]:
+    break
     r = requests.get('http://2016.cec.gov.tw/opendata/cec2016/getJson?dataType=%s' % datatype)
     for candidate in r.json()[key]:
         candidate['cec_data'] = json.dumps(candidate)
@@ -55,10 +59,11 @@ for datatype, key in [('3', u'區域立委公報')]:
             updateCandidates(candidate)
 # unqualify
 for candidate in [(u'桃園市', 5, u'羅文欽'), (u'桃園市', 3, u'黃志浩')]:
+    break
     c.execute('''
         delete from candidates_terms
-        where ad = 9 and county = %s and constituency = %s and name = %s returning candidate_id
-    ''', (candidate[0], candidate[1], candidate[2]))
+        where ad = %s and county = %s and constituency = %s and name = %s returning candidate_id
+    ''', (ad, candidate[0], candidate[1], candidate[2]))
     res = c.fetchone()
     if res:
         candidate_id = res[0]
@@ -69,6 +74,7 @@ for candidate in [(u'桃園市', 5, u'羅文欽'), (u'桃園市', 3, u'黃志浩
 #
 
 for datatype, key in [('4', u'山地原住民立委'), ('5', u'平地原住民立委')]:
+    break
     r = requests.get('http://2016.cec.gov.tw/opendata/cec2016/getJson?dataType=%s' % datatype)
     for candidate in r.json()[key]:
         candidate['cec_data'] = json.dumps(candidate)
@@ -83,6 +89,7 @@ for datatype, key in [('4', u'山地原住民立委'), ('5', u'平地原住民�
             updateCandidates(candidate)
 
 for datatype, key in [('2', u'全國不分區及僑居國外國民立委公報')]:
+    break
     r = requests.get('http://2016.cec.gov.tw/opendata/cec2016/getJson?dataType=%s' % datatype)
     for candidate in r.json()[key]:
         candidate['cec_data'] = json.dumps(candidate)
@@ -94,4 +101,68 @@ for datatype, key in [('2', u'全國不分區及僑居國外國民立委公報')
         if candidate.get('drawno'):
             candidate['gender'] = u'男' if candidate['gender'] == 'M' else u'女'
             updateCandidates(candidate)
+
+counties = {}
+r = requests.get('http://2016.cec.gov.tw/opendata/cec2016/getJson?dataType=6')
+for region in r.json()[u'選舉區應選人數/對應之行政區']:
+    match = re.search(u'第(?P<constituency>\d+)選舉?區', region['sessionname'])
+    region['constituency'] = int(match.group('constituency')) if match else 1
+    dv = {}
+    for x in region['sessiontownship']:
+        if x.get('areaname'):
+            if x['areaname'] not in dv.keys():
+                dv.update({x['areaname']: []})
+            dv[x['areaname']].append(x['villagename'])
+    if region['cityname'] not in counties.keys():
+        counties.update({
+            region['cityname']: {
+                'regions': [],
+                'duplicated': []
+            }
+        })
+    counties[region['cityname']]['regions'].append({
+        'constituency': region['constituency'],
+        'electedperson': region['electedperson'],
+        'district': dv,
+    })
+    c.execute('''
+        update candidates_terms
+        set district = %s
+        where ad = %s and county = %s and constituency = %s
+    ''', (u'、'.join(dv.keys()), ad, region['cityname'], region['constituency']))
+
+for county, v in counties.items():
+    regions = v['regions']
+    counties[county]['regions'] = sorted(counties[county]['regions'], key=lambda x: x['constituency'])
+    districts, duplicate_detail = [], []
+    for region in v['regions']:
+        districts.extend(region['district'].keys())
+    duplicated = [item for item, count in collections.Counter(districts).items() if count > 1]
+    if duplicated:
+        for region in v['regions']:
+            for district, villages in region['district'].items():
+                if district in duplicated:
+                    duplicate_detail.append({
+                        'constituency': region['constituency'],
+                        'district': district,
+                        'villages': villages
+                    })
+        duplicate_detail = sorted(duplicate_detail, key=lambda x: [x['district'], x['constituency']])
+        dv = [{'district': d, 'detail': []} for d in {x['district'] for x in duplicate_detail}]
+        for d in duplicate_detail:
+            for u in dv:
+                if d['district'] == u['district']:
+                    u['detail'].append({
+                        'constituency': d['constituency'],
+                        'villages': d['villages']
+                    })
+                    break
+        counties[county].update({'duplicated': dv})
+with codecs.open('election_region_2016.json', 'w', encoding='utf-8') as outfile:
+    outfile.write(json.dumps(counties, indent=2, ensure_ascii=False))
+c.execute('''
+    INSERT INTO elections_elections(id, data)
+    SELECT %s, %s
+    WHERE NOT EXISTS (SELECT 1 FROM elections_elections WHERE id = %s)
+''', (str(ad), counties, str(ad)))
 conn.commit()
