@@ -9,7 +9,7 @@ import json
 import glob
 from datetime import datetime
 
-import pandas as pd
+#import pandas as pd
 
 import ly_common
 import db_settings
@@ -113,6 +113,7 @@ ad = 9
 county_versions = json.load(open('county_versions.json'))
 files = [f for f in glob.glob('%s/*.xlsx' % ad)]
 for f in files:
+    break
     if re.search('全國不分區', f):
         df = pd.read_excel(f, names=['date', 'party', 'priority', 'name', 'area', 'cec', 'remark'], usecols=[0, 1, 2, 3, 5, 6, 7])
     elif re.search('區域', f):
@@ -134,4 +135,36 @@ for f in files:
             candidate['constituency'] = 1
             candidate['county'] = candidate['area']
         insertCandidates(candidate)
+#conn.commit()
+
+#After election, update info that didn't exist before election, tmp source from https://github.com/tommy87166/CECresult
+j = json.load(open('9/latest.json'))
+for k, v in j.items():
+    if k not in ['atlarge', 'president']:
+        for candidate in v[1]:
+            candidate[2] = re.sub(u'[。˙・･•．.]', u'‧', candidate[2])
+            candidate[2] = re.sub(u'[　\s()（）]', '', candidate[2])
+            candidate[2] = re.sub(u'黄玉芬', u'黃玉芬', candidate[2])
+            elected = False if candidate[0].find(u'◎') == -1 else True
+            try:
+                c.execute('''
+                    update candidates_terms
+                    set elected = %s, votes = %s, votes_percentage = %s
+                    where number = %s and name = %s returning id
+                ''', [elected, int(candidate[4].replace(',', '')), candidate[5], candidate[1], candidate[2]])
+                resp = c.fetchone()
+                if not resp:
+                    # English in name
+                    # contains name, same county, latest ad
+                    m = re.match(u'(?P<cht>.+?)[a-zA-Z]', candidate[2])
+                    candidate[2] = '%s%%' % m.group('cht') if m else '%s%%' % candidate[2]
+                    c.execute('''
+                        update candidates_terms
+                        set votes = %s, votes_percentage = %s
+                        where number = %s and name like %s returning id
+                    ''', [int(candidate[4].replace(',', '')), candidate[5], candidate[1], candidate[2]])
+                    c.fetchone()[0]
+            except:
+                print json.dumps(candidate, indent=2, ensure_ascii=False)
+                raw_input()
 conn.commit()
