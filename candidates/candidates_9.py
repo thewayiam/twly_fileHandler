@@ -4,6 +4,7 @@ import sys
 sys.path.append('../')
 import os
 import re
+import csv
 import uuid
 import json
 import glob
@@ -113,7 +114,6 @@ ad = 9
 county_versions = json.load(open('county_versions.json'))
 files = [f for f in glob.glob('%s/*.xlsx' % ad)]
 for f in files:
-    break
     if re.search('全國不分區', f):
         df = pd.read_excel(f, names=['date', 'party', 'priority', 'name', 'area', 'cec', 'remark'], usecols=[0, 1, 2, 3, 5, 6, 7])
     elif re.search('區域', f):
@@ -135,7 +135,7 @@ for f in files:
             candidate['constituency'] = 1
             candidate['county'] = candidate['area']
         insertCandidates(candidate)
-#conn.commit()
+conn.commit()
 
 #After election, update info that didn't exist before election, tmp source from https://github.com/tommy87166/CECresult
 j = json.load(open('9/latest.json'))
@@ -167,4 +167,18 @@ for k, v in j.items():
             except:
                 print json.dumps(candidate, indent=2, ensure_ascii=False)
                 raw_input()
+with open('9/nonregional.csv', 'rb') as csvfile:
+    spamreader = csv.reader(csvfile)
+    for candidate in spamreader:
+        try:
+            elected = True if re.search('(◎|●)', candidate[0]) else False
+            c.execute('''
+                update candidates_terms
+                set elected = %s
+                where party = %s and priority = %s returning id
+            ''', [elected, candidate[1], candidate[2]])
+            c.fetchone()[0]
+        except:
+            print ', '.join(candidate)
+            raw_input()
 conn.commit()
