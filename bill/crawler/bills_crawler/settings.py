@@ -23,6 +23,9 @@ NEWSPIDER_MODULE = 'bills_crawler.spiders'
 # for develop
 #HTTPCACHE_ENABLED = True
 #HTTPCACHE_EXPIRATION_SECS = 0
+ITEM_PIPELINES = {
+    'bills_crawler.pipelines.DuplicatesPipeline': 300,
+}
 
 FEED_EXPORTERS = {
     'json': 'crawler_lib.misc.UnicodeJsonItemExporter',

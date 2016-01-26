@@ -6,6 +6,7 @@ import requests
 import re
 import codecs
 import psycopg2
+import glob
 import json
 import db_settings
 import ly_common
@@ -33,43 +34,36 @@ def LegislatorBill(legislator_id, bill_id, role):
 conn = db_settings.con()
 c = conn.cursor()
 
-dict_list = json.load(open('bills_8.json'))
-print len(dict_list)
-print 'uids num: %d' % len(set([bill[u'系統號'] for bill in dict_list]))
-processed, output = [], []
-for i, bill in enumerate(dict_list):
-    if bill[u'系統號'] in processed:
-        continue
-    #bill
-    bill['uid'] = bill[u'系統號']
-    bill['ad'] = int(re.search(u'(\d+)屆', bill[u'會期']).group(1))
-    bill['for_search'] = ' '.join([bill[key].replace(';', '') for key in [u'分類', u'主題', u'提案名稱'] if bill.get(key)])
-    bill['links'][u'關係文書'] = 'http://lis.ly.gov.tw/lgcgi/lgmeetimage?' + bill['links'][u'關係文書'].split('^')[-1]
-    for key in [u'主提案', u'連署提案']:
-        if type(bill.get(key, [])) != type([]):
-            bill[key] = [bill[key]]
-    bill['data'] = json.dumps(bill)
-    print bill[u'uid'], bill['ad']
-    Bill(bill)
-    # legilator_bill
-    for legislator in bill[u'主提案']:
-        uid = ly_common.GetLegislatorId(c, legislator)
-        if uid:
-            legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
-            if legislator_id:
-                LegislatorBill(legislator_id, bill['uid'], 'sponsor')
-    for legislator in bill.get(u'連署提案', []):
-        uid = ly_common.GetLegislatorId(c, legislator)
-        if uid:
-            legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
-            if legislator_id:
-                LegislatorBill(legislator_id, bill['uid'], 'cosponsor')
-    processed.append(bill['uid'])
-    output.append(bill)
+for f in glob.glob('crawler/bills_*.json'):
+    dict_list = json.load(open(f))
+    print len(dict_list)
+    print 'uids num: %d' % len(set([bill[u'系統號'] for bill in dict_list]))
+    for i, bill in enumerate(dict_list):
+        #bill
+        bill['uid'] = bill[u'系統號']
+        bill['ad'] = int(re.search(u'(\d+)屆', bill[u'會期']).group(1))
+        bill['for_search'] = ' '.join([bill[key].replace(';', '') for key in [u'分類', u'主題', u'提案名稱'] if bill.get(key)])
+        bill['links'][u'關係文書'] = 'http://lis.ly.gov.tw/lgcgi/lgmeetimage?' + bill['links'][u'關係文書'].split('^')[-1]
+        for key in [u'主提案', u'連署提案']:
+            if type(bill.get(key, [])) != type([]):
+                bill[key] = [bill[key]]
+        bill['data'] = json.dumps(bill)
+        print bill[u'uid'], bill['ad']
+        Bill(bill)
+        # legilator_bill
+        for legislator in bill[u'主提案']:
+            uid = ly_common.GetLegislatorId(c, legislator)
+            if uid:
+                legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
+                if legislator_id:
+                    LegislatorBill(legislator_id, bill['uid'], 'sponsor')
+        for legislator in bill.get(u'連署提案', []):
+            uid = ly_common.GetLegislatorId(c, legislator)
+            if uid:
+                legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
+                if legislator_id:
+                    LegislatorBill(legislator_id, bill['uid'], 'cosponsor')
 conn.commit()
-dump_data = json.dumps(output, indent=2, sort_keys=True, ensure_ascii=False)
-with codecs.open('processed_8.json', 'w', encoding='utf-8') as file:
-    file.write(dump_data)
 print 'bills done'
 
 c.execute('''

@@ -22,15 +22,15 @@ class Spider(scrapy.Spider):
     def parse(self, response):
         nodes = response.xpath('//ul[@id="ball_r"]//a')
         for node in nodes:
-            yield Request(urljoin(response.url, node.xpath('@href').extract_first()), callback=self.parse_ad, dont_filter=True)
-            break
+            href = node.xpath('@href').extract_first()
+            if href.endswith('8'):
+                yield Request(urljoin(response.url, href), callback=self.parse_ad, dont_filter=True)
 
     def parse_ad(self, response):
         nodes = response.xpath('//a[starts-with(@href, "/lylegisc")]')
         for node in nodes:
             href = node.xpath('@href').extract_first()
-            if re.search('memb1745', href):
-                yield Request(urljoin(response.url, href), callback=self.parse_profile, dont_filter=True)
+            yield Request(urljoin(response.url, href), callback=self.parse_profile, dont_filter=True)
 
     def parse_profile(self, response):
         href = response.xpath(u'//img[@alt="問政成果"]/parent::a/@href').extract_first()
