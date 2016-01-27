@@ -23,7 +23,7 @@ class Spider(scrapy.Spider):
         nodes = response.xpath('//ul[@id="ball_r"]//a')
         for node in nodes:
             href = node.xpath('@href').extract_first()
-            if href.endswith('8'):
+            if href.endswith('9'):
                 yield Request(urljoin(response.url, href), callback=self.parse_ad, dont_filter=True)
 
     def parse_ad(self, response):
