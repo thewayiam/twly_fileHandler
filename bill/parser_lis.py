@@ -1,15 +1,14 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys
-sys.path.append('../')
 import requests
 import re
 import codecs
 import psycopg2
 import glob
 import json
-import db_settings
-import ly_common
+
+from common import ly_common
+from common import db_settings
 
 
 def Bill(bill):
@@ -34,7 +33,7 @@ def LegislatorBill(legislator_id, bill_id, role):
 conn = db_settings.con()
 c = conn.cursor()
 
-for f in glob.glob('crawler/bills_*.json'):
+for f in glob.glob('bill/crawler/bills_1.json'):
     dict_list = json.load(open(f))
     print len(dict_list)
     print 'uids num: %d' % len(set([bill[u'系統號'] for bill in dict_list]))

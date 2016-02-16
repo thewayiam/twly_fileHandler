@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys
-sys.path.append('../')
 import os
 import re
 import uuid
@@ -11,8 +9,8 @@ from datetime import datetime
 
 import pandas as pd
 
-import ly_common
-import db_settings
+from common import ly_common
+from common import db_settings
 
 
 def latest_term(candidate):
@@ -107,11 +105,11 @@ def insertCandidates(candidate):
 
 conn = db_settings.con()
 c = conn.cursor()
+ad = 8
 
-county_versions = json.load(open('county_versions.json'))
-files = [f for f in glob.glob('*/register.xls')]
+county_versions = json.load(open('candidates/county_versions.json'))
+files = [f for f in glob.glob('candidates/8/register.xls')]
 for f in files:
-    ad = f.split('/')[0]
     for sheet in [0, u'不分區']:
         df = pd.read_excel(f, sheetname=sheet, names=['date', 'area', 'name', 'party', 'cec', 'remark'], usecols=[0, 1, 2, 3, 4, 5])
         df = df[df['remark'].isnull() & df['name'].notnull()]
@@ -182,10 +180,9 @@ def elected_term(candidate):
     print candidate
     return r[0]
 
-files = [f for f in glob.glob('*/history/*.xls')]
+files = [f for f in glob.glob('candidates/8/history/*.xls')]
 for f in files:
     print f
-    ad = f.split('/')[0]
     col_indexs = ['area', 'name', 'number', 'gender', 'birth', 'party', 'votes', 'votes_percentage', 'elected', 'occupy']
     df = pd.read_excel(f, sheetname=0, names=col_indexs, usecols=range(0, len(col_indexs)))
     df = df[df['name'].notnull()]

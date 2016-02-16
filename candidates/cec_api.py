@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys
-sys.path.append('../')
 import re
 import json
 import codecs
@@ -9,8 +7,8 @@ import requests
 from datetime import datetime
 import collections
 
-import ly_common
-import db_settings
+from common import ly_common
+from common import db_settings
 
 
 def updateCandidates(candidate):
@@ -154,7 +152,7 @@ for county, v in counties.items():
                     })
                     break
         counties[county].update({'duplicated': dv})
-with codecs.open('election_region_2016.json', 'w', encoding='utf-8') as outfile:
+with codecs.open('data/candidates/election_region_2016.json', 'w', encoding='utf-8') as outfile:
     outfile.write(json.dumps(counties, indent=2, ensure_ascii=False))
 c.execute('''
     update elections_elections

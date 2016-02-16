@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys
-sys.path.append('../')
 import os
 import re
 import csv
@@ -10,10 +8,10 @@ import json
 import glob
 from datetime import datetime
 
-#import pandas as pd
+import pandas as pd
 
-import ly_common
-import db_settings
+from common import ly_common
+from common import db_settings
 
 
 def latest_term(candidate):
@@ -111,8 +109,9 @@ conn = db_settings.con()
 c = conn.cursor()
 
 ad = 9
-county_versions = json.load(open('county_versions.json'))
-files = [f for f in glob.glob('%s/*.xlsx' % ad)]
+BASE_DIR = os.path.dirname(__file__)
+county_versions = json.load(open(os.path.join(BASE_DIR, 'county_versions.json')))
+files = [f for f in glob.glob('%s/*.xlsx' % os.path.join(BASE_DIR, str(ad)))]
 for f in files:
     if re.search('全國不分區', f):
         df = pd.read_excel(f, names=['date', 'party', 'priority', 'name', 'area', 'cec', 'remark'], usecols=[0, 1, 2, 3, 5, 6, 7])
@@ -138,7 +137,7 @@ for f in files:
 conn.commit()
 
 #After election, update info that didn't exist before election, tmp source from https://github.com/tommy87166/CECresult
-j = json.load(open('9/latest.json'))
+j = json.load(open(os.path.join(BASE_DIR, '%d/latest.json' % ad)))
 for k, v in j.items():
     if k not in ['atlarge', 'president']:
         for candidate in v[1]:
@@ -167,7 +166,7 @@ for k, v in j.items():
             except:
                 print json.dumps(candidate, indent=2, ensure_ascii=False)
                 raw_input()
-with open('9/nonregional.csv', 'rb') as csvfile:
+with open(os.path.join(BASE_DIR, '%d/nonregional.csv' % ad), 'rb') as csvfile:
     spamreader = csv.reader(csvfile)
     for candidate in spamreader:
         try:

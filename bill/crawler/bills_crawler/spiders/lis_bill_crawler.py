@@ -19,11 +19,15 @@ class Spider(scrapy.Spider):
     ]
     download_delay = 0.5
 
+    def __init__(self, ad=None, *args, **kwargs):
+        super(Spider, self).__init__(*args, **kwargs)
+        self.ad = ad
+
     def parse(self, response):
         nodes = response.xpath('//ul[@id="ball_r"]//a')
         for node in nodes:
             href = node.xpath('@href').extract_first()
-            if href.endswith('9'):
+            if href.endswith(self.ad):
                 yield Request(urljoin(response.url, href), callback=self.parse_ad, dont_filter=True)
 
     def parse_ad(self, response):

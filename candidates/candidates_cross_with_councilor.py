@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys
-sys.path.append('../')
 import os
 import re
 import uuid
@@ -11,8 +9,8 @@ from datetime import datetime
 
 import pandas as pd
 
-import ly_common
-import db_settings
+from common import ly_common
+from common import db_settings
 
 
 conn = db_settings.con()
@@ -53,10 +51,10 @@ try:
         liked = c_another.fetchone()
         if liked[0]:
             r_another.append(liked[0][0])
-    with open('%s/cross.json' % ad, 'w') as outfile:
+    with open('candidates/%s/cross.json' % ad, 'w') as outfile:
         json.dump(r_another, outfile)
 except:
-    with open('%s/cross.json' % ad, 'r') as infile:
+    with open('candidates/%s/cross.json' % ad, 'r') as infile:
         r_another = json.load(infile)
 finally:
     for councilor_candidate in r_another:
