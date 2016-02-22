@@ -17,15 +17,15 @@ url = 'http://data.ly.gov.tw/odw/openDatasetJson.action?id=19&selectTerm=all&pag
 
 # api pages -> page.json -> laws -> bills
 
-i = 0
-r = requests.get('%s%d' % (url, i))
-while r.json()['jsonList']:
-    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
-    print 'Page %d' % i
-    for raw in r.json()['jsonList']:
-        pass
-    i += 1
-    r = requests.get('%s%d' % (url, i))
+#i = 0
+#r = requests.get('%s%d' % (url, i))
+#while r.json()['jsonList']:
+#    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+#    print 'Page %d' % i
+#    for raw in r.json()['jsonList']:
+#        pass
+#    i += 1
+#    r = requests.get('%s%d' % (url, i))
 
 laws = {}
 for f in sorted(glob.glob('data/laws/pages/*.json'), key=lambda x : int(x.split('/')[-1].rstrip('.json'))):
@@ -82,8 +82,9 @@ for billNo, bill in laws.items():
         'meetings': bill['meetings'].keys(),
         'lines': lines
     }
-    bills.append(lines)
+    bills.append(bill_lines)
     match = re.search(u'院總第(\d+)號委員提案第(\d+)號', bill['docUrl'])
+    bill_id = None
     if match:
         c.execute('''
             select uid
@@ -91,7 +92,8 @@ for billNo, bill in laws.items():
             WHERE data->>'提案編號' = %s
         ''', [u'%s委%s' % match.groups()])
         r = c.fetchone()
-        bill_id = r[0] if r else None
+        if r:
+            bill_id = r[0]
     c.execute('''
         INSERT into bill_law(uid, ad, data, bill_id)
         SELECT %s, %s, %s, %s
