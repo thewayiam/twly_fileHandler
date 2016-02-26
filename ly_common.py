@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 import re
-import codecs
-import psycopg2
 import json
 from datetime import datetime
 
+
+def normalize_person_name(name):
+    name = re.sub(u'[。˙・･•．.]', u'‧', name)
+    name = re.sub(u'[　\s()（）]', '',name)
+    name = name.title()
+    return name
 
 def normalize_person(person):
     person['name'] = re.sub(u'[。˙・･•．.]', u'‧', person['name'])

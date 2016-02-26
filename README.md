@@ -17,9 +17,10 @@ $ python -m legislator.legislator
 ```
 
 ## 法條修正草案
-Pass ad(屆期) to crawler, if output file already exist please remove it first manually, ad=8 for example:
+Pass ad(屆期) to crawler, if output file already exist please remove it first manually, ad=9 for example:
 ```
-bill/crawler$ scrapy crawler lis -a ad=8 -o bills_8.json -t json	
+bill/crawler$ rm bills_9.json	
+bill/crawler$ scrapy crawl lis -a ad=9 -o bills_9.json -t json	
 $ python -m bill.parser_lis		
 $ python -m bill.law
 ```

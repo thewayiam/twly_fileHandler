@@ -22,8 +22,6 @@ url = 'http://data.ly.gov.tw/odw/openDatasetJson.action?id=19&selectTerm=all&pag
 #while r.json()['jsonList']:
 #    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
 #    print 'Page %d' % i
-#    for raw in r.json()['jsonList']:
-#        pass
 #    i += 1
 #    r = requests.get('%s%d' % (url, i))
 
@@ -37,6 +35,7 @@ for f in sorted(glob.glob('data/laws/pages/*.json'), key=lambda x : int(x.split(
                 'meetings': {},
                 'term': fragment['term'],
                 'docUrl': fragment['docUrl'],
+                'docNo': fragment['docNo'],
                 'lawCompareTitle': fragment['lawCompareTitle']
             }
         meeting = fragment['selectTerm'] + fragment['sessionTimes'] + ('T%s' % fragment['meetingTimes'] if fragment['meetingTimes'] != 'null' else '')
@@ -78,12 +77,13 @@ for billNo, bill in laws.items():
         'no': billNo,
         'title': bill['lawCompareTitle'],
         'ad': bill['term'],
-        'ref': bill['docUrl'],
+        'links': {'doc': bill['docUrl']},
+        'ref': bill['docNo'],
         'meetings': bill['meetings'].keys(),
         'lines': lines
     }
     bills.append(bill_lines)
-    match = re.search(u'院總第(\d+)號委員提案第(\d+)號', bill['docUrl'])
+    match = re.search(u'院總第(\d+)號委員提案第(\d+)號', bill['docNo'])
     bill_id = None
     if match:
         c.execute('''
@@ -95,9 +95,14 @@ for billNo, bill in laws.items():
         if r:
             bill_id = r[0]
     c.execute('''
+        update bill_law
+        set ad = %s, data = %s, bill_id = %s
+        where uid = %s
+    ''', [bill_lines['ad'], bill_lines, bill_id, bill_lines['no'], ])
+    c.execute('''
         INSERT into bill_law(uid, ad, data, bill_id)
         SELECT %s, %s, %s, %s
         WHERE NOT EXISTS (SELECT 1 FROM bill_law WHERE uid = %s)
     ''', [bill_lines['no'], bill_lines['ad'], bill_lines, bill_id, bill_lines['no'], ])
-json.dump(bills, codecs.open('data/laws/lines.json', 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+#json.dump(bills, codecs.open('data/laws/lines.json', 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
 conn.commit()
