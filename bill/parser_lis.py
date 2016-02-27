@@ -63,7 +63,7 @@ for f in glob.glob('bill/crawler/bills_*.json'):
                 legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
                 if legislator_id:
                     LegislatorBill(legislator_id, bill['uid'], 'sponsor')
-            else:
+            elif not re.search(u'黨團', legislator):
                 print legislator
                 raw_input('not legislator?')
         for legislator in bill.get(u'連署提案', []):
@@ -73,7 +73,7 @@ for f in glob.glob('bill/crawler/bills_*.json'):
                 legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
                 if legislator_id:
                     LegislatorBill(legislator_id, bill['uid'], 'cosponsor')
-            else:
+            elif not re.search(u'黨團', legislator):
                 print legislator
                 raw_input('not legislator?')
 conn.commit()
