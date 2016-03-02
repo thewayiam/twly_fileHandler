@@ -18,8 +18,8 @@ BOT_NAME = 'bills_crawler'
 
 SPIDER_MODULES = ['bills_crawler.spiders']
 NEWSPIDER_MODULE = 'bills_crawler.spiders'
-#COOKIES_ENABLED = False
-#LOG_FILE = 'log.txt'
+#COOKIES_ENABLED = True
+LOG_FILE = 'log.txt'
 # for develop
 #HTTPCACHE_ENABLED = True
 #HTTPCACHE_EXPIRATION_SECS = 0

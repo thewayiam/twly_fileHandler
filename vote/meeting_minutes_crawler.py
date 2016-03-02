@@ -35,14 +35,12 @@ class Spider(scrapy.Spider):
 
     def html2txt(self, response):
         r = requests.get(response.url)
-        soup = BeautifulSoup(r.text)
-        f = codecs.open('t.txt', 'w', encoding='utf-8')
-        f.write(soup.get_text())
-        f.close()
+        soup = BeautifulSoup(r.text, 'lxml')
+        with codecs.open('t.txt', 'w', encoding='utf-8') as f:
+            f.write(soup.get_text())
 #       cmd = u"sed -n '/議事錄/,/allans=0/p' t.txt | tr '傅萁' '傅崐萁' | grep . > %s" % response.request.meta['op']
         cmd = u"sed -n '/議事錄/,/allans=0/p' t.txt | grep . > %s" % response.request.meta['op']
         subprocess.call(cmd, shell=True)
         ret = subprocess.check_output("rm t.txt && wc -l %s" % response.request.meta['op'], shell=True)
         if int(ret.split()[0]) < 5: # transform haven't finished
             subprocess.call("rm %s" % response.request.meta['op'], shell=True)
-

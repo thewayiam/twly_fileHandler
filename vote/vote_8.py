@@ -66,8 +66,8 @@ def GetVoteContent(vote_seq, text):
         return '\n'.join(lines[-2:])
     else:
         return lines[-1]
-    print 'WTF'
     print text
+    print 'WTF!!!'
     raw_input()
 
 def MakeVoteRelation(legislator_id, vote_id, decision):
@@ -162,9 +162,12 @@ ad = 8
 sitting_ids = vote_common.sittingIdsInAd(c, ad)
 dicts = json.load(open('minutes.json'))
 for meeting in dicts:
+    break
     print meeting['name']
     #--> meeting info already there but meeting_minutes haven't publish
     if not os.path.exists('meeting_minutes/%s.txt' % meeting['name']):
+        print 'File not exist, please check!!'
+        raw_input()
         continue
     #<--
     sourcetext = codecs.open(u'meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()

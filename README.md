@@ -3,6 +3,10 @@ twly_fileHandler
 
 File handler of [立委投票指南](http://vote.ly.g0v.tw/)     
 
+需求
+======
+postgresql-9.5
+
 使用方法
 ======
 (1) [建立資料庫](https://github.com/g0v/twly-voter-guide#restore-data-into-database)       
@@ -20,7 +24,7 @@ $ python -m legislator.legislator
 Pass ad(屆期) to crawler, if output file already exist please remove it first manually, ad=9 for example:
 ```
 bill/crawler$ rm bills_9.json	
-bill/crawler$ scrapy crawl lis -a ad=9 -o bills_9.json -t json	
+bill/crawler$ scrapy crawl lis_by_ad -a ad=9 -o bills_9.json -t json	
 $ python -m bill.parser_lis		
 $ python -m bill.law
 ```

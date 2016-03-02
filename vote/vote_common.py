@@ -148,7 +148,7 @@ def vote_param(c):
         SELECT
             legislator_id,
             COUNT(*) total,
-            SUM(CASE WHEN conflict = True THEN 1 ELSE 0 END) conflict,
+            SUM(CASE WHEN conflict = True THEN 1 ELSE 0 END) "conflict",
             SUM(CASE WHEN decision isnull THEN 1 ELSE 0 END) not_voting,
             SUM(CASE WHEN decision = 1 THEN 1 ELSE 0 END) agree,
             SUM(CASE WHEN decision = 0 THEN 1 ELSE 0 END) abstain,

@@ -37,14 +37,11 @@ def Legislator(legislator):
     else:
         legislator.update({'former_names': ''})
     c.execute('''
-        UPDATE legislator_legislator
-        SET name = %(name)s, former_names = %(former_names)s
-        WHERE uid = %(uid)s
-    ''', legislator)
-    c.execute('''
         INSERT INTO legislator_legislator(uid, name, former_names)
-        SELECT %(uid)s, %(name)s, %(former_names)s
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislator WHERE uid = %(uid)s)
+        VALUES (%(uid)s, %(name)s, %(former_names)s)
+        ON CONFLICT (uid)
+        DO UPDATE
+        SET name = %(name)s, former_names = %(former_names)s
     ''', legislator)
 
 def LegislatorDetail(uid, term, ideal_term_end_year):
@@ -64,15 +61,21 @@ def LegislatorDetail(uid, term, ideal_term_end_year):
     complement.update(term)
     complement['party'] = [{"name": complement['party'], "end_at": complement['term_end']['date'], "start_at": complement['term_start']}]
     c.execute('''
-        UPDATE legislator_legislatordetail
-        SET name = %(name)s, gender = %(gender)s, title = %(title)s, party = %(party)s, elected_party = %(elected_party)s, caucus = %(caucus)s, constituency = %(constituency)s, in_office = %(in_office)s, contacts = %(contacts)s, county = %(county)s, district = %(district)s, term_start = %(term_start)s, term_end = %(term_end)s, education = %(education)s, experience = %(experience)s, remark = %(remark)s, image = %(image)s, links = %(links)s
-        WHERE legislator_id = %(uid)s AND ad = %(ad)s
-    ''', complement)
-    c.execute('''
         INSERT into legislator_legislatordetail(legislator_id, ad, name, gender, title, party, elected_party, caucus, constituency, county, district, in_office, contacts, term_start, term_end, education, experience, remark, image, links)
-        SELECT %(uid)s, %(ad)s, %(name)s, %(gender)s, %(title)s, %(party)s, %(elected_party)s, %(caucus)s, %(constituency)s, %(county)s, %(district)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_legislatordetail WHERE legislator_id = %(uid)s AND ad = %(ad)s)
+        VALUES (%(uid)s, %(ad)s, %(name)s, %(gender)s, %(title)s, %(party)s, %(elected_party)s, %(caucus)s, %(constituency)s, %(county)s, %(district)s, %(in_office)s, %(contacts)s, %(term_start)s, %(term_end)s, %(education)s, %(experience)s, %(remark)s, %(image)s, %(links)s)
+        ON CONFLICT (ad, legislator_id)
+        DO UPDATE
+        SET name = %(name)s, gender = %(gender)s, title = %(title)s, party = %(party)s, elected_party = %(elected_party)s, caucus = %(caucus)s, constituency = %(constituency)s, in_office = %(in_office)s, contacts = %(contacts)s, county = %(county)s, district = %(district)s, term_start = %(term_start)s, term_end = %(term_end)s, education = %(education)s, experience = %(experience)s, remark = %(remark)s, image = %(image)s, links = %(links)s
+        returning id
     ''', complement)
+    # because we only have cec candidates data after ad > 7
+    if complement['ad'] > 7:
+        complement['legislator_id'] = c.fetchone()[0]
+        c.execute('''
+            UPDATE candidates_terms
+            SET legislator_id = %(legislator_id)s
+            WHERE name = %(name)s AND ad = %(ad)s AND county = %(county)s AND constituency = %(constituency)s
+        ''', complement)
 
 def Committees(committees):
     c.executemany('''
@@ -85,14 +88,11 @@ def Legislator_Committees(legislator_id, committee):
     complement = {"legislator_id":legislator_id}
     complement.update(committee)
     c.execute('''
-        UPDATE committees_legislator_committees
-        SET chair = %(chair)s
-        WHERE legislator_id = %(legislator_id)s AND committee_id = %(name)s AND ad = %(ad)s AND session = %(session)s
-    ''', complement)
-    c.execute('''
         INSERT INTO committees_legislator_committees(legislator_id, committee_id, ad, session, chair)
-        SELECT %(legislator_id)s, %(name)s, %(ad)s, %(session)s, %(chair)s
-        WHERE NOT EXISTS (SELECT 1 FROM committees_legislator_committees WHERE legislator_id = %(legislator_id)s AND committee_id = %(name)s AND ad = %(ad)s AND session = %(session)s )
+        VALUES (%(legislator_id)s, %(name)s, %(ad)s, %(session)s, %(chair)s)
+        ON CONFLICT (ad, legislator_id, committee_id, session)
+        DO UPDATE
+        SET chair = %(chair)s
     ''', complement)
 
 conn = db_settings.con()

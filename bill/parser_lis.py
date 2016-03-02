@@ -36,7 +36,7 @@ def ROC2AD(roc_date):
 conn = db_settings.con()
 c = conn.cursor()
 
-for f in glob.glob('bill/crawler/bills_*.json'):
+for f in glob.glob('bill/crawler/bills_9.json'):
     dict_list = json.load(open(f))
     print len(dict_list)
     print 'uids num: %d' % len(set([bill[u'系統號'] for bill in dict_list]))
@@ -56,26 +56,17 @@ for f in glob.glob('bill/crawler/bills_*.json'):
         print bill['uid'], bill['ad']
         Bill(bill)
         # legilator_bill
-        for legislator in bill[u'主提案']:
-            legislator = ly_common.normalize_person_name(legislator)
-            uid = ly_common.GetLegislatorId(c, legislator)
-            if uid:
-                legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
-                if legislator_id:
-                    LegislatorBill(legislator_id, bill['uid'], 'sponsor')
-            elif not re.search(u'黨團', legislator):
-                print legislator
-                raw_input('not legislator?')
-        for legislator in bill.get(u'連署提案', []):
-            legislator = ly_common.normalize_person_name(legislator)
-            uid = ly_common.GetLegislatorId(c, legislator)
-            if uid:
-                legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
-                if legislator_id:
-                    LegislatorBill(legislator_id, bill['uid'], 'cosponsor')
-            elif not re.search(u'黨團', legislator):
-                print legislator
-                raw_input('not legislator?')
+        for category, role in [(u'主提案', 'sponsor'), (u'連署提案', 'cosponsor')]:
+            for legislator in bill[category]:
+                legislator = ly_common.normalize_person_name(legislator)
+                uid = ly_common.GetLegislatorId(c, legislator)
+                if uid:
+                    legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
+                    if legislator_id:
+                        LegislatorBill(legislator_id, bill['uid'], role)
+                elif not re.search(u'(黨團|聯盟)', legislator):
+                    print legislator
+                    raw_input('not legislator?')
 conn.commit()
 print 'bills done'
 
