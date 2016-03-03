@@ -47,17 +47,15 @@ for f in glob.glob('bill/crawler/bills_9.json'):
         bill['date'] = ROC2AD(bill[u'提案日期'])
         for motion in bill['motions']:
             motion['date'] = ROC2AD(motion[u'日期'])
-        bill['for_search'] = ' '.join([bill[key].replace(';', '') for key in [u'分類', u'主題', u'提案名稱'] if bill.get(key)])
+        for_search = bill.get(u'主題', []) + bill.get(u'分類', [])
+        bill['for_search'] = ' '.join(for_search) + bill.get(u'提案名稱', '')
         bill['links'][u'關係文書'] = 'http://lis.ly.gov.tw/lgcgi/lgmeetimage?' + bill['links'][u'關係文書'].split('^')[-1]
-        for key in [u'主提案', u'連署提案']:
-            if type(bill.get(key, [])) != type([]):
-                bill[key] = [bill[key]]
         bill['data'] = json.dumps(bill)
         print bill['uid'], bill['ad']
         Bill(bill)
         # legilator_bill
         for category, role in [(u'主提案', 'sponsor'), (u'連署提案', 'cosponsor')]:
-            for legislator in bill[category]:
+            for legislator in bill.get(category, []):
                 legislator = ly_common.normalize_person_name(legislator)
                 uid = ly_common.GetLegislatorId(c, legislator)
                 if uid:
@@ -96,7 +94,6 @@ c.execute('''
     from bill_bill
 ''')
 for bill_id, ad in c.fetchall():
-    print bill_id
     c.execute('''
         select jsonb_object_agg("role", "detail")
         from (

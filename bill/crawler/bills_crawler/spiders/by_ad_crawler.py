@@ -7,8 +7,10 @@ from scrapy.http import Request, FormRequest
 from scrapy.selector import Selector
 
 
-def first_or_list(data):
-    data = [x.strip() for x in data if x.strip()]
+def first_or_list(key, data):
+    data = [x.strip() for x in data if x.strip().strip(';')]
+    if key in [u'主提案', u'連署提案', u'主題', u'類別']:
+        return data
     return data[0].strip() if len(data) == 1 else data
 
 class Spider(scrapy.Spider):
@@ -49,8 +51,8 @@ class Spider(scrapy.Spider):
 
     def parse_law_bill(self, response):
         trs = response.xpath('//tr[@class="rectr"]')
-        item = {tr.xpath('td[1]/nobr/text()').extract_first(): first_or_list(tr.xpath('td[2]//text()').extract()) for tr in trs}
-        item.pop(u"關係文書", None)
+        item = {tr.xpath('td[1]/nobr/text()').extract_first(): first_or_list(tr.xpath('td[1]/nobr/text()').extract_first(), tr.xpath('td[2]//text()').extract()) for tr in trs}
+        item.pop(u"關係文書", None) # this one not proper info, parse below
         has_motions = response.xpath(u'//img[@src="/lylegis/images/ref4.png"]/parent::a/@href').extract_first()
         links = {
             u'關係文書': urljoin(response.url, response.xpath(u'//img[@src="/lylegis/images/view.png"]/parent::a/@href').extract_first()),

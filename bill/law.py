@@ -15,7 +15,7 @@ conn = db_settings.con()
 c = conn.cursor()
 url = 'http://data.ly.gov.tw/odw/openDatasetJson.action?id=19&selectTerm=all&page='
 
-# api pages -> page.json -> laws -> bills
+# api pages -> page.json -> laws -> bills(with lines)
 
 i = 0
 r = requests.get('%s%d' % (url, i))

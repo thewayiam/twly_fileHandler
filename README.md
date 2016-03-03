@@ -10,10 +10,11 @@ postgresql-9.5
 使用方法
 ======
 (1) [建立資料庫](https://github.com/g0v/twly-voter-guide#restore-data-into-database)       
-(2) ./db_settings.py：資料庫 config 請自行設定		
+(2) common/db_settings.py：資料庫 config 請自行設定		
 (3) update git submodule
 ```
-data/twly_crawler$ git pull origin master
+$ git submodule init
+$ git submodule update
 ```
 (4) 建立/更新立委資料
 ```
@@ -23,7 +24,7 @@ $ python -m legislator.legislator
 ## 法條修正草案
 Pass ad(屆期) to crawler, if output file already exist please remove it first manually, ad=9 for example:
 ```
-bill/crawler$ rm bills_9.json	
+bill/crawler$ rm -f bills_9.json	
 bill/crawler$ scrapy crawl lis_by_ad -a ad=9 -o bills_9.json -t json	
 $ python -m bill.parser_lis		
 $ python -m bill.law
