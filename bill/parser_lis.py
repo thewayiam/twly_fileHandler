@@ -49,7 +49,7 @@ for f in glob.glob('bill/crawler/bills_9.json'):
             motion['date'] = ROC2AD(motion[u'日期'])
         for_search = bill.get(u'主題', []) + bill.get(u'分類', [])
         bill['for_search'] = ' '.join(for_search) + bill.get(u'提案名稱', '')
-        bill['links'][u'關係文書'] = 'http://lis.ly.gov.tw/lgcgi/lgmeetimage?' + bill['links'][u'關係文書'].split('^')[-1]
+#       bill['links'][u'關係文書'] = 'http://lis.ly.gov.tw/lgcgi/lgmeetimage?' + bill['links'][u'關係文書'].split('^')[-1]
         bill['data'] = json.dumps(bill)
         print bill['uid'], bill['ad']
         Bill(bill)
