@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 import urllib
+import urllib2
 from urlparse import urljoin
 import scrapy
 from scrapy.http import Request, FormRequest
@@ -54,11 +55,10 @@ class Spider(scrapy.Spider):
         item = {tr.xpath('td[1]/nobr/text()').extract_first(): first_or_list(tr.xpath('td[1]/nobr/text()').extract_first(), tr.xpath('td[2]//text()').extract()) for tr in trs}
         item.pop(u"關係文書", None) # this one not proper info, parse below
         has_motions = response.xpath(u'//img[@src="/lylegis/images/ref4.png"]/parent::a/@href').extract_first()
-        links = {
-            u'關係文書': urljoin(response.url, response.xpath(u'//img[@src="/lylegis/images/view.png"]/parent::a/@href').extract_first()),
+        item['links'] = {
+            u'關係文書': urljoin(response.url, '/lgcgi/lgmeetimage?%s' % response.xpath(u'//img[@src="/lylgmeet/img/view.png"]/parent::a/@href').extract_first().split('^')[-1]),
             u'審議進度': urljoin(response.url, has_motions) if has_motions else None
         }
-        item['links'] = links
         if has_motions:
             yield Request(item['links'][u'審議進度'], callback=self.parse_law_bill_motions, dont_filter=True, meta={'item': item})
         else:
