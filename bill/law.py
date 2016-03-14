@@ -17,17 +17,16 @@ url = 'http://data.ly.gov.tw/odw/openDatasetJson.action?id=19&selectTerm=all&pag
 
 # api pages -> page.json -> laws -> bills(with lines)
 
-i = 0
-r = requests.get('%s%d' % (url, i))
-while r.json()['jsonList']:
-    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
-    print 'Page %d' % i
-    i += 1
-    r = requests.get('%s%d' % (url, i))
+#i = 0
+#r = requests.get('%s%d' % (url, i))
+#while r.json()['jsonList']:
+#    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+#    print 'Page %d' % i
+#    i += 1
+#    r = requests.get('%s%d' % (url, i))
 
 laws = {}
 for f in sorted(glob.glob('data/laws/pages/*.json'), key=lambda x : int(x.split('/')[-1].rstrip('.json'))):
-    print f
     page = json.load(open(f))
     for fragment in page['jsonList']:
         if not laws.get(fragment['billNo']):
@@ -46,7 +45,6 @@ for f in sorted(glob.glob('data/laws/pages/*.json'), key=lambda x : int(x.split(
         )
 bills = []
 for billNo, bill in laws.items():
-    print billNo
     #--> check law are the same in each meetings
     meeting_0_bill = bill['meetings'][bill['meetings'].keys()[0]]
     if len(bill['meetings'].keys()) > 1:
@@ -54,13 +52,12 @@ for billNo, bill in laws.items():
         activeLaws = {line['activeLaw'] for line in meeting_0_bill}
         descriptions = {line['description'] for line in meeting_0_bill}
         for no in bill['meetings'].keys()[1:]:
-            print no
             if reviseLaws != {line['reviseLaw'] for line in bill['meetings'][no]}:
-                raise 'reviseLaw unmatch'
+                raise billNo + no + 'reviseLaw unmatch'
             if activeLaws != {line['activeLaw'] for line in bill['meetings'][no]}:
-                raise 'activeLaw unmatch'
+                raise billNo + no + 'activeLaw unmatch'
             if descriptions != {line['description'] for line in bill['meetings'][no]}:
-                raise 'description unmatch'
+                raise billNo + no + 'description unmatch'
     #<--
     lines = []
     for line in meeting_0_bill:

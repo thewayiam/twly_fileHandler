@@ -26,7 +26,7 @@ Pass ad(屆期) to crawler, if output file already exist please remove it first 
 ```
 bill/crawler$ rm -f bills_9.json	
 bill/crawler$ scrapy crawl lis_by_ad -a ad=9 -o bills_9.json -t json	
-$ python -m bill.parser_lis		
+$ python -m bill.parser_lis	'{"ad": 9}'	
 $ python -m bill.law
 ```
 

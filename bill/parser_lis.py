@@ -6,6 +6,8 @@ import codecs
 import psycopg2
 import glob
 import json
+import ast
+from sys import argv
 
 from common import ly_common
 from common import db_settings
@@ -35,36 +37,38 @@ def ROC2AD(roc_date):
 
 conn = db_settings.con()
 c = conn.cursor()
+ad = ast.literal_eval(argv[1])['ad']
 
-for f in glob.glob('bill/crawler/bills_9.json'):
+for f in glob.glob('bill/crawler/bills_%d.json' % ad):
     dict_list = json.load(open(f))
     print len(dict_list)
     print 'uids num: %d' % len(set([bill[u'系統號'] for bill in dict_list]))
     for i, bill in enumerate(dict_list):
-        #bill
-        bill['uid'] = bill[u'系統號']
-        bill['ad'] = int(re.search(u'(\d+)屆', bill[u'會期']).group(1))
-        bill['date'] = ROC2AD(bill[u'提案日期'])
-        for motion in bill['motions']:
-            motion['date'] = ROC2AD(motion[u'日期'])
-        for_search = bill.get(u'主題', []) + bill.get(u'分類', [])
-        bill['for_search'] = ' '.join(for_search) + bill.get(u'提案名稱', '')
-#       bill['links'][u'關係文書'] = 'http://lis.ly.gov.tw/lgcgi/lgmeetimage?' + bill['links'][u'關係文書'].split('^')[-1]
-        bill['data'] = json.dumps(bill)
-        print bill['uid'], bill['ad']
-        Bill(bill)
-        # legilator_bill
-        for category, role in [(u'主提案', 'sponsor'), (u'連署提案', 'cosponsor')]:
-            for legislator in bill.get(category, []):
-                legislator = ly_common.normalize_person_name(legislator)
-                uid = ly_common.GetLegislatorId(c, legislator)
-                if uid:
-                    legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
-                    if legislator_id:
-                        LegislatorBill(legislator_id, bill['uid'], role)
-                elif not re.search(u'(黨團|聯盟)', legislator):
-                    print legislator
-                    raw_input('not legislator?')
+        try:
+            #bill
+            bill['uid'] = bill[u'系統號']
+            bill['ad'] = int(re.search(u'(\d+)屆', bill[u'會期']).group(1))
+            bill['date'] = ROC2AD(bill[u'提案日期'])
+            for motion in bill['motions']:
+                motion['date'] = ROC2AD(motion[u'日期'])
+            for_search = bill.get(u'主題', []) + bill.get(u'分類', [])
+            bill['for_search'] = ' '.join(for_search) + bill.get(u'提案名稱', '')
+    #       bill['links'][u'關係文書'] = 'http://lis.ly.gov.tw/lgcgi/lgmeetimage?' + bill['links'][u'關係文書'].split('^')[-1]
+            bill['data'] = json.dumps(bill)
+            Bill(bill)
+            # legilator_bill
+            for category, role in [(u'主提案', 'sponsor'), (u'連署提案', 'cosponsor')]:
+                for legislator in bill.get(category, []):
+                    legislator = ly_common.normalize_person_name(legislator)
+                    uid = ly_common.GetLegislatorId(c, legislator)
+                    if uid:
+                        legislator_id = ly_common.GetLegislatorDetailId(c, uid, bill['ad'])
+                        if legislator_id:
+                            LegislatorBill(legislator_id, bill['uid'], role)
+                    elif not re.search(u'(黨團|聯盟)', legislator):
+                        raise
+        except:
+            print 'bill id: %s, ad: %d, name: %s not legislator?' % (bill['uid'], bill['ad'], legislator)
 conn.commit()
 print 'bills done'
 
@@ -92,7 +96,8 @@ print 'Update Bill param of People'
 c.execute('''
     select uid, ad
     from bill_bill
-''')
+    where ad = %s
+''', [ad])
 for bill_id, ad in c.fetchall():
     c.execute('''
         select jsonb_object_agg("role", "detail")

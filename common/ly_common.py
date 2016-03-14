@@ -51,7 +51,7 @@ def GetDate(text):
         return None
 
 def GetLegislatorId(c, name):
-    name_like = name + '%'
+    name_like = '%' + name + '%'
     c.execute('''
         SELECT uid
         FROM legislator_legislator
