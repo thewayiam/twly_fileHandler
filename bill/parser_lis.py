@@ -51,12 +51,12 @@ for f in glob.glob('bill/crawler/bills_%d.json' % ad):
             bill['date'] = ROC2AD(bill[u'提案日期'])
             for motion in bill['motions']:
                 motion['date'] = ROC2AD(motion[u'日期'])
-            for_search = bill.get(u'主題', []) + bill.get(u'分類', [])
+            for_search = bill.get(u'主題', []) + bill.get(u'類別', [])
             bill['for_search'] = ' '.join(for_search) + bill.get(u'提案名稱', '')
     #       bill['links'][u'關係文書'] = 'http://lis.ly.gov.tw/lgcgi/lgmeetimage?' + bill['links'][u'關係文書'].split('^')[-1]
             bill['data'] = json.dumps(bill)
             Bill(bill)
-            # legilator_bill
+            # legislator_bill
             for category, role in [(u'主提案', 'sponsor'), (u'連署提案', 'cosponsor')]:
                 for legislator in bill.get(category, []):
                     legislator = ly_common.normalize_person_name(legislator)
