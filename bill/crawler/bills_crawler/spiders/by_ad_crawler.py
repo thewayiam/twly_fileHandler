@@ -20,7 +20,7 @@ class Spider(scrapy.Spider):
     start_urls = [
         "http://lis.ly.gov.tw/lylgmeetc/lgmeetkm_lgmem",
     ]
-    download_delay = 0.5
+    download_delay = 1
 
     def __init__(self, ad=None, *args, **kwargs):
         super(Spider, self).__init__(*args, **kwargs)
@@ -33,22 +33,24 @@ class Spider(scrapy.Spider):
                 '_20_8_T': str(self.ad).zfill(2),
                 'INFO': response.xpath('//input[@name="INFO"]/@value').extract_first()
             },
-            callback=self.parse_ad
+            callback=self.parse_max_per_page
         )
 
-    def parse_ad(self, response):
-        length = response.xpath('//td/text()').re(u'委員提案 (\d+) 筆')[0]
-        href = response.xpath('//a[@class="linkpage"]/@href').extract_first()
-        pages = int(length) / 10
-        for page in range(pages+1):
-            link = re.sub('01000001', '01%s' % hex(page)[2:].zfill(6).upper(), href)
-            yield Request(urljoin(response.url, link), callback=self.parse_law_bill_list, dont_filter=True)
+    def parse_max_per_page(self, response):
+        href = response.xpath('//select[@onchange="instback(this)"]/option[re:test(text(), "^\d+$")]/@value').extract()
+        yield Request(urljoin(response.url, href[-1]), callback=self.parse_law_bill_list, dont_filter=True, meta={'page': 1})
 
     def parse_law_bill_list(self, response):
         nodes = response.xpath('//a[@class="link02"]')
+        print len(nodes)
         for node in nodes[1::2]:
             href = node.xpath('@href').extract_first()
             yield Request(urljoin(response.url, href), callback=self.parse_law_bill, dont_filter=True)
+        page = response.request.meta['page']
+        print page
+        href = response.xpath('//a[@class="linkpage" and re:test(normalize-space(text()), "%d")]/@href' % (page+1)).extract_first()
+        if href:
+            yield Request(urljoin(response.url, href), callback=self.parse_law_bill_list, dont_filter=True, meta={'page': (page+1)})
 
     def parse_law_bill(self, response):
         trs = response.xpath('//tr[@class="rectr"]')
