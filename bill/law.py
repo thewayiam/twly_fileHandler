@@ -21,7 +21,6 @@ i = 0
 r = requests.get('%s%d' % (url, i))
 while r.json()['jsonList']:
     json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
-    print 'Page %d' % i
     i += 1
     r = requests.get('%s%d' % (url, i))
 

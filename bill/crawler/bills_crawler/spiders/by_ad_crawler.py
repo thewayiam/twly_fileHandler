@@ -42,12 +42,10 @@ class Spider(scrapy.Spider):
 
     def parse_law_bill_list(self, response):
         nodes = response.xpath('//a[@class="link02"]')
-        print len(nodes)
         for node in nodes[1::2]:
             href = node.xpath('@href').extract_first()
             yield Request(urljoin(response.url, href), callback=self.parse_law_bill, dont_filter=True)
         page = response.request.meta['page']
-        print page
         href = response.xpath('//a[@class="linkpage" and re:test(normalize-space(text()), "%d")]/@href' % (page+1)).extract_first()
         if href:
             yield Request(urljoin(response.url, href), callback=self.parse_law_bill_list, dont_filter=True, meta={'page': (page+1)})
