@@ -68,7 +68,9 @@ for f in glob.glob('bill/crawler/bills_%d.json' % ad):
                     elif not re.search(u'(黨團|聯盟)', legislator):
                         raise
         except:
-            print 'bill id: %s, ad: %d, name: %s not legislator?' % (bill['uid'], bill['ad'], legislator)
+            print 'bill id: %s, ad: %d' % (bill['uid'], bill['ad'], )
+            print '%s not legislator?' % legislator
+            continue
 conn.commit()
 print 'bills done'
 

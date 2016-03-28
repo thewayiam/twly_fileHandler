@@ -32,16 +32,14 @@ def normalize_constituency(constituency):
     return total
 
 def Legislator(legislator):
-    if legislator.has_key('former_names'):
-        legislator['former_names'] = '\n'.join(legislator['former_names'])
-    else:
-        legislator.update({'former_names': ''})
+    legislator['identifiers'] = list((set(legislator['former_names']) | {legislator['name'], re.sub(u'[\w‧]', '', legislator['name']), re.sub(u'\W', '', legislator['name']).lower(), }) - {''})
+    legislator['former_names'] = '\n'.join(legislator['former_names']) if legislator.has_key('former_names') else ''
     c.execute('''
-        INSERT INTO legislator_legislator(uid, name, former_names)
-        VALUES (%(uid)s, %(name)s, %(former_names)s)
+        INSERT INTO legislator_legislator(uid, name, former_names, identifiers)
+        VALUES (%(uid)s, %(name)s, %(former_names)s, %(identifiers)s)
         ON CONFLICT (uid)
         DO UPDATE
-        SET name = %(name)s, former_names = %(former_names)s
+        SET name = %(name)s, former_names = %(former_names)s, identifiers = %(identifiers)s
     ''', legislator)
 
 def LegislatorDetail(uid, term, ideal_term_end_year):

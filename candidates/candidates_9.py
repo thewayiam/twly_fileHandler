@@ -149,8 +149,8 @@ for k, v in j.items():
                 c.execute('''
                     update candidates_terms
                     set elected = %s, votes = %s, votes_percentage = %s
-                    where number = %s and name = %s returning id
-                ''', [elected, int(candidate[4].replace(',', '')), candidate[5], candidate[1], candidate[2]])
+                    where ad = %s and number = %s and name = %s returning id
+                ''', [elected, int(candidate[4].replace(',', '')), candidate[5], ad, candidate[1], candidate[2]])
                 resp = c.fetchone()
                 if not resp:
                     # English in name
@@ -160,10 +160,11 @@ for k, v in j.items():
                     c.execute('''
                         update candidates_terms
                         set votes = %s, votes_percentage = %s
-                        where number = %s and name like %s returning id
-                    ''', [int(candidate[4].replace(',', '')), candidate[5], candidate[1], candidate[2]])
+                        where ad = %s and number = %s and name like %s returning id
+                    ''', [int(candidate[4].replace(',', '')), candidate[5], ad, candidate[1], candidate[2]])
                     c.fetchone()[0]
-            except:
+            except Exception, e:
+                print e
                 print json.dumps(candidate, indent=2, ensure_ascii=False)
                 raw_input()
 with open(os.path.join(BASE_DIR, '%d/nonregional.csv' % ad), 'rb') as csvfile:
@@ -174,10 +175,11 @@ with open(os.path.join(BASE_DIR, '%d/nonregional.csv' % ad), 'rb') as csvfile:
             c.execute('''
                 update candidates_terms
                 set elected = %s
-                where party = %s and priority = %s returning id
-            ''', [elected, candidate[1], candidate[2]])
+                where ad = %s and party = %s and priority = %s returning id
+            ''', [elected, ad, candidate[1], candidate[2]])
             c.fetchone()[0]
-        except:
+        except Exception, e:
+            print e
             print ', '.join(candidate)
             raw_input()
 conn.commit()

@@ -17,12 +17,12 @@ url = 'http://data.ly.gov.tw/odw/openDatasetJson.action?id=19&selectTerm=all&pag
 
 # api pages -> page.json -> laws -> bills(with lines)
 
-i = 0
-r = requests.get('%s%d' % (url, i))
-while r.json()['jsonList']:
-    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
-    i += 1
-    r = requests.get('%s%d' % (url, i))
+#i = 1
+#r = requests.get('%s%d' % (url, i))
+#while r.json()['jsonList']:
+#    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+#    i += 1
+#    r = requests.get('%s%d' % (url, i))
 
 laws = {}
 for f in sorted(glob.glob('data/laws/pages/*.json'), key=lambda x : int(x.split('/')[-1].rstrip('.json'))):
@@ -47,21 +47,17 @@ for billNo, bill in laws.items():
     #--> check law are the same in each meetings
     meeting_0_bill = bill['meetings'][bill['meetings'].keys()[0]]
     if len(bill['meetings'].keys()) > 1:
-        reviseLaws = {line['reviseLaw'] for line in meeting_0_bill}
-        activeLaws = {line['activeLaw'] for line in meeting_0_bill}
-        descriptions = {line['description'] for line in meeting_0_bill}
+        meeting_0_laws = {x: {line[x] for line in meeting_0_bill} for x in ['description', 'activeLaw', 'reviseLaw']}
         for no in bill['meetings'].keys()[1:]:
-            if reviseLaws != {line['reviseLaw'] for line in bill['meetings'][no]}:
-                raise billNo + no + 'reviseLaw unmatch'
-            if activeLaws != {line['activeLaw'] for line in bill['meetings'][no]}:
-                raise billNo + no + 'activeLaw unmatch'
-            if descriptions != {line['description'] for line in bill['meetings'][no]}:
-                raise billNo + no + 'description unmatch'
+            for k, v in meeting_0_laws.items():
+                if v != {line[k] for line in bill['meetings'][no]}:
+                    raise billNo + no + '%s unmatch' % k
     #<--
     lines = []
     for line in meeting_0_bill:
         for key in ['activeLaw', 'reviseLaw', 'description', ]:
-            line[key] = line[key] or ''
+            if line[key] is None:
+                line[key] = ''
         s = difflib.SequenceMatcher(None, line['activeLaw'], line['reviseLaw'])
         lines.append(
             {

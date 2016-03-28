@@ -8,9 +8,11 @@ import json
 import codecs
 import psycopg2
 from datetime import datetime
-import db_settings
-import ly_common
+
 import vote_common
+from common import ly_common
+from common import db_settings
+
 
 
 def InsertVote(uid, sitting_id, vote_seq, content):
@@ -134,8 +136,6 @@ def IterVote(text, sitting_dict):
             vote_seq = '%03d' % (int(vote_seq)+1)
             vote_id = '%s-%s' % (sitting_id, vote_seq)
             content = GetVoteContent(vote_seq, text[:match.start()+2])
-            print content
-            #raw_input()
             if content:
                 InsertVote(vote_id, sitting_id, vote_seq, content)
             if vote_id:
@@ -149,16 +149,16 @@ def IterVote(text, sitting_dict):
 conn = db_settings.con()
 c = conn.cursor()
 ad = 6
-dicts = json.load(open('minutes.json'))
+dicts = json.load(open('vote/minutes.json'))
 for meeting in dicts:
     print meeting['name']
     #--> meeting info already there but meeting_minutes haven't publish
-    if not os.path.exists('meeting_minutes/%s.txt' % meeting['name']):
+    if not os.path.exists('vote/meeting_minutes/%s.txt' % meeting['name']):
         print 'File not exist, please check!!'
         raw_input()
         continue
     #<--
-    sourcetext = codecs.open('meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()
+    sourcetext = codecs.open('vote/meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()
     ms, uid = ly_common.SittingDict(meeting['name'])
     date = ly_common.GetDate(sourcetext)
     if int(ms.group('ad')) != ad:

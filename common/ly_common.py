@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 import json
+import time
 from datetime import datetime
 
 
@@ -51,47 +52,39 @@ def GetDate(text):
         return None
 
 def GetLegislatorId(c, name):
-    name_like = '%' + name + '%'
+    identifiers = {name, re.sub(u'[\w‧]', '', name), re.sub(u'\W', '', name).lower(), } - {''}
     c.execute('''
         SELECT uid
         FROM legislator_legislator
-        WHERE name like %s
-        ORDER BY uid desc
-    ''', (name_like,))
-    r = c.fetchone()
-    if r:
-        return r[0]
-    #print name
+        WHERE identifiers ?| array[%s]
+    ''' % ','.join(["'%s'" % x for x in identifiers]))
+    return c.fetchall()
 
 def GetLegislatorDetailId(c, legislator_id, ad):
+    if type(legislator_id) != type([]):
+        legislator_id = [legislator_id]
     c.execute('''
         SELECT id
         FROM legislator_legislatordetail
-        WHERE legislator_id = %s and ad = %s
-    ''', (legislator_id, ad))
+        WHERE legislator_id in %s and ad = %s
+    ''', (tuple(legislator_id), ad))
     r = c.fetchone()
     if r:
         return r[0]
     #print legislator_id
 
 def GetLegislatorIdList(c, text):
-    id_list, firstName = [], ''
+    id_list = []
+    text = re.sub(u'　([^　\w])　([^　\w])　', u'　\g<1>\g<2>　', text) # e.g. 楊　曜=>楊曜
+    text = re.sub(' ', '', text) # e.g. Kolas Yotaka=>KolasYotaka
     for name in text.split():
-        if re.search(u'[）)。】」]$', name):   #立委名字後有標點符號
+        if re.search(u'[）)。】」]$', name):   # 立委名字後有標點符號
             name = name[:-1]
-        #兩個字的立委中文名字中間有空白
-        if len(name) < 2 and firstName == '':
-            firstName = name
-            continue
-        if len(name) < 2 and firstName != '':
-            name = firstName + name
-            firstName = ''
-        if len(name) > 4: #立委名字相連
-            name = name[:3]
         legislator_id = GetLegislatorId(c, name)
         if legislator_id:
             id_list.append(legislator_id)
         else:   # return id list if not an legislator name appear
+            print '%s not an legislator?' % name
             return id_list
 
 def AddAttendanceRecord(c, legislator_id, sitting_id, category, status):
