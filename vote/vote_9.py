@@ -182,8 +182,8 @@ for meeting in dicts:
     sitting_dict = {"uid": uid, "name": meeting['name'], "ad": ms.group('ad'), "date": date, "session": ms.group('session'), "links": meeting['links']}
     ly_common.InsertSitting(c, sitting_dict)
     ly_common.FileLog(c, meeting['name'])
-    ly_common.Attendance(c, sitting_dict, sourcetext, u'出席委員[:：]?', 'YS', 'present')
-    ly_common.Attendance(c, sitting_dict, sourcetext, u'請假委員[:：]?', 'YS', 'absent')
+    ly_common.Attendance(c, sitting_dict, sourcetext, u'出席委員[:：　]?', 'YS', 'present')
+    ly_common.Attendance(c, sitting_dict, sourcetext, u'請假委員[:：　]?', 'YS', 'absent')
     IterVote(sourcetext, sitting_dict)
 
 vote_common.conscience_vote(c, ad)

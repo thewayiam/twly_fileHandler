@@ -75,68 +75,51 @@ def GetLegislatorDetailId(c, legislator_id, ad):
 
 def GetLegislatorIdList(c, text):
     id_list = []
-    text = re.sub(u'　([^　\w])　([^　\w])　', u'　\g<1>\g<2>　', text) # e.g. 楊　曜=>楊曜
-    text = re.sub(' ', '', text) # e.g. Kolas Yotaka=>KolasYotaka
+    text = text.strip(u'[　\s]')
+    text = re.sub(u'([^　\w])　([^　\w])　', u'\g<1>\g<2>　', text) # e.g. 楊　曜=>楊曜, 包含句首
+    text = re.sub(u'　([^　\w])　([^　\w])', u'　\g<1>\g<2>', text) # e.g. 楊　曜=>楊曜, 包含句尾
+    text = re.sub(u'(\w+) (\w+)　', u'\g<1>\g<2>　', text) # e.g. Kolas Yotaka=>KolasYotaka, 包含句首
+    text = re.sub(u'　(\w+) (\w+)', u'　\g<1>\g<2>', text) # e.g. Kolas Yotaka=>KolasYotaka, 包含句尾
+    text = re.sub(u'^([^　\w])　([^　\w])$', u'\g<1>\g<2>', text) # e.g. 楊　曜=>楊曜, 單獨一人
+    text = re.sub(u'^(\w+) (\w+)$', u'\g<1>\g<2>', text) # e.g. Kolas Yotaka=>KolasYotaka, 單獨一人
     for name in text.split():
-        if re.search(u'[）)。】」]$', name):   # 立委名字後有標點符號
-            name = name[:-1]
+        name = re.sub(u'(.*)[）)。】」]$', '\g<1>', name)   # 立委名字後有標點符號
         legislator_id = GetLegislatorId(c, name)
         if legislator_id:
             id_list.append(legislator_id)
-        else:   # return id list if not an legislator name appear
+        else:
             print '%s not an legislator?' % name
-            return id_list
+    return id_list
 
 def AddAttendanceRecord(c, legislator_id, sitting_id, category, status):
     c.execute('''
-        INSERT into legislator_attendance(legislator_id, sitting_id, category, status)
-        SELECT %s, %s, %s, %s
-        WHERE NOT EXISTS (SELECT 1 FROM legislator_attendance WHERE legislator_id = %s AND sitting_id = %s)
-    ''', (legislator_id, sitting_id, category, status, legislator_id, sitting_id))
+        INSERT INTO legislator_attendance(legislator_id, sitting_id, category, status)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (legislator_id, sitting_id, category)
+        DO UPDATE
+        SET status = %s
+    ''', (legislator_id, sitting_id, category, status, status))
 
 def Attendance(c, sitting_dict, text, keyword, category, status):
     match = re.search(keyword, text)
     if match:
-        for legislator_id in GetLegislatorIdList(c, text[match.end():]):
+        for legislator_id in GetLegislatorIdList(c, text[match.end():].split('\n')[0]):
             legislator_id = GetLegislatorDetailId(c, legislator_id, sitting_dict["ad"])
             AddAttendanceRecord(c, legislator_id, sitting_dict["uid"], category, status)
+    elif status == 'present':
+        print "Can' find attendance list"
+        raise
 
-def InsertSitting(c, sitting_dict, update=True):
+def InsertSitting(c, sitting_dict):
     complement = {"committee":'', "name":''}
     complement.update(sitting_dict)
-    if update:
-        c.execute('''
-            UPDATE sittings_sittings
-            SET name = %(name)s, date = %(date)s, ad = %(ad)s, session = %(session)s, committee = %(committee)s, links = %(links)s
-            WHERE uid = %(uid)s
-        ''', complement)
     c.execute('''
         INSERT into sittings_sittings(uid, name, date, ad, session, committee, links)
-        SELECT %(uid)s, %(name)s, %(date)s, %(ad)s, %(session)s, %(committee)s, %(links)s
-        WHERE NOT EXISTS (SELECT 1 FROM sittings_sittings WHERE uid = %(uid)s)
+        VALUES (%(uid)s, %(name)s, %(date)s, %(ad)s, %(session)s, %(committee)s, %(links)s)
+        ON CONFLICT (uid)
+        DO UPDATE
+        SET name = %(name)s, date = %(date)s, ad = %(ad)s, session = %(session)s, committee = %(committee)s, links = %(links)s
     ''', complement)
-
-def UpdateSitting(c, uid, name):
-    c.execute('''
-        UPDATE sittings_sittings
-        SET name = %s
-        WHERE uid = %s
-    ''', (name, uid))
-
-def UpdateFileLog(c, id, sitting):
-    c.execute('''
-        UPDATE legislator_filelog
-        SET sitting = %s
-        WHERE id = %s
-    ''', (sitting, id))
-
-def remote_newline_in_filelog(c):
-    c.execute('''
-        select id, sitting
-        from legislator_filelog
-    ''')
-    for id, sitting in c.fetchall():
-        UpdateFileLog(c, id, re.sub(u'[\s]', '', sitting))
 
 def SittingDict(text):
     ms = re.search(u'''
