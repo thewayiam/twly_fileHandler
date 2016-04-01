@@ -31,14 +31,15 @@ $ python -m bill.law
 ```
 
 ## 立院表決紀錄，立院出缺席紀錄
-vote_8.py 的8是立法院屆期
+vote_9 的9是立法院屆期
 
 ```
 vote$ rm minutes.json
 vote$ scrapy runspider meeting_minutes_crawler.py -o minutes.json
-vote$ python vote_8.py		
-vote$ python vote_7.py		
-vote$ python vote_6.py		
+$ python -m vote.vote_9
+$ python -m vote.vote_8
+$ python -m vote.vote_7
+$ python -m vote.vote_6
 ```
 
 ## 候選人和政治獻金

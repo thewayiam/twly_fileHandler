@@ -53,12 +53,13 @@ def GetDate(text):
 
 def GetLegislatorId(c, name):
     identifiers = {name, re.sub(u'[\w‧]', '', name), re.sub(u'\W', '', name).lower(), } - {''}
-    c.execute('''
-        SELECT uid
-        FROM legislator_legislator
-        WHERE identifiers ?| array[%s]
-    ''' % ','.join(["'%s'" % x for x in identifiers]))
-    return c.fetchall()
+    if identifiers:
+        c.execute('''
+            SELECT uid
+            FROM legislator_legislator
+            WHERE identifiers ?| array[%s]
+        ''' % ','.join(["'%s'" % x for x in identifiers]))
+        return c.fetchall()
 
 def GetLegislatorDetailId(c, legislator_id, ad):
     if type(legislator_id) != type([]):

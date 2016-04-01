@@ -12,13 +12,6 @@ from common import ly_common
 from common import db_settings
 
 
-def InsertVote(uid, sitting_id, vote_seq, category, content):
-    c.execute('''
-        INSERT into vote_vote(uid, sitting_id, vote_seq, category, content)
-        SELECT %s, %s, %s, %s, %s
-        WHERE NOT EXISTS (SELECT 1 FROM vote_vote WHERE uid = %s)
-    ''', (uid, sitting_id, vote_seq, category, content, uid))
-
 def GetVoteContent(vote_seq, text):
     # 傳入的text為"附後"該行以上的所有該次會議內容
     lines = [line.strip() for line in text.split('\n') if line]
@@ -69,18 +62,6 @@ def GetVoteContent(vote_seq, text):
     print 'WTF!!!'
     raw_input()
 
-def MakeVoteRelation(legislator_id, vote_id, decision):
-    c.execute('''
-        UPDATE vote_legislator_vote
-        SET decision = %s, conflict = null
-        WHERE legislator_id = %s AND vote_id = %s
-    ''', (decision, legislator_id, vote_id))
-    c.execute('''
-        INSERT into vote_legislator_vote(legislator_id, vote_id, decision)
-        SELECT %s, %s, %s
-        WHERE NOT EXISTS (SELECT 1 FROM vote_legislator_vote WHERE legislator_id = %s AND vote_id = %s)
-    ''',(legislator_id, vote_id, decision, legislator_id, vote_id))
-
 def LiterateVoter(sitting_dict, text, vote_id, decision):
     firstName = ''
     for name in text.split():
@@ -95,7 +76,7 @@ def LiterateVoter(sitting_dict, text, vote_id, decision):
         legislator_id = ly_common.GetLegislatorId(c, name)
         if legislator_id:
             legislator_id = ly_common.GetLegislatorDetailId(c, legislator_id, sitting_dict["ad"])
-            MakeVoteRelation(legislator_id, vote_id, decision)
+            vote_common.upsert_vote_legislator_vote(c, legislator_id, vote_id, decision)
         else:
             break
 
@@ -133,8 +114,7 @@ def IterVote(text, sitting_dict):
             content = GetVoteContent(vote_seq, text[:match.start()+2])
             category = u'變更議程順序' if re.search(u'提議(變更議程|\W{0,4}增列)', content.split('\n')[0]) else ''
             if content:
-                InsertVote(vote_id, sitting_id, vote_seq, category, content)
-            if vote_id:
+                vote_common.upsert_vote(c, vote_id, sitting_id, vote_seq, category, content)
                 mapprove, mreject, mquit = IterEachDecision(votertext, sitting_dict, vote_id)
             votertext = votertext[(mquit or mreject or mapprove).end():]
         if not match:
@@ -151,8 +131,7 @@ def IterVote(text, sitting_dict):
         content = GetVoteContent(vote_seq, text[:mvoter.start()])
         category = u''
         if content:
-            InsertVote(vote_id, sitting_id, vote_seq, category, content)
-        if vote_id:
+            vote_common.upsert_vote(c, vote_id, sitting_id, vote_seq, category, content)
             mapprove, mreject, mquit = IterEachDecision(votertext, sitting_dict, vote_id)
 
 conn = db_settings.con()
@@ -161,7 +140,7 @@ ad = 8
 sitting_ids = vote_common.sittingIdsInAd(c, ad)
 dicts = json.load(open('vote/minutes.json'))
 for meeting in dicts:
-    print meeting['name']
+    print '[%s]' % meeting['name']
     #--> meeting info already there but meeting_minutes haven't publish
     if not os.path.exists('vote/meeting_minutes/%s.txt' % meeting['name']):
         print 'File not exist, please check!!'
@@ -172,7 +151,7 @@ for meeting in dicts:
     ms, uid = ly_common.SittingDict(meeting['name'])
     date = ly_common.GetDate(sourcetext)
     if int(ms.group('ad')) != ad or uid in sitting_ids:
-        print 'Skip: ' + meeting['name']
+        print 'Skip'
         continue
     else:
         if not date:

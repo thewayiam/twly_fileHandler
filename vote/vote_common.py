@@ -190,3 +190,21 @@ def sittingIdsInAd(c, ad):
         WHERE ad = %s AND name != ''
     ''', (ad, ))
     return [x[0] for x in c.fetchall()]
+
+def upsert_vote(c, uid, sitting_id, vote_seq, category, content):
+    c.execute('''
+        INSERT INTO vote_vote(uid, sitting_id, vote_seq, category, content)
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (uid)
+        DO UPDATE
+        SET sitting_id = %s, vote_seq = %s, category = %s, content = %s
+    ''', (uid, sitting_id, vote_seq, category, content, sitting_id, vote_seq, category, content))
+
+def upsert_vote_legislator_vote(c, legislator_id, vote_id, decision):
+    c.execute('''
+        INSERT INTO vote_legislator_vote(legislator_id, vote_id, decision)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (legislator_id, vote_id)
+        DO UPDATE
+        SET decision = %s, conflict = null
+    ''',(legislator_id, vote_id, decision, decision))
