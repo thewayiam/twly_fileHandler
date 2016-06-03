@@ -6,6 +6,7 @@ File handler of [立委投票指南](http://vote.ly.g0v.tw/)
 需求
 ======
 postgresql-9.5
+pandas >= 0.18 (sudo apt-get install python-pandas)
 
 使用方法
 ======
@@ -43,11 +44,12 @@ $ python -m vote.vote_6
 ```
 
 ## 候選人和政治獻金
-candidates_8 的8是立法院屆期
+candidates_8 的8是立法院屆期, candidates_9 need excute after cec_api because of the drawno of candidate
 ```
 $ python -m candidates.candidates_8
 $ python -m candidates.cec_api
 $ python -m candidates.candidates_cross_with_councilor
+$ python -m candidates.candidates_9
 candidates/political_contribution$ python political_contribution.py
 ```
 

@@ -114,12 +114,12 @@ county_versions = json.load(open(os.path.join(BASE_DIR, 'county_versions.json'))
 files = [f for f in glob.glob('%s/*.xlsx' % os.path.join(BASE_DIR, str(ad)))]
 for f in files:
     if re.search('全國不分區', f):
-        df = pd.read_excel(f, names=['date', 'party', 'priority', 'name', 'area', 'cec', 'remark'], usecols=[0, 1, 2, 3, 5, 6, 7])
+        df = pd.read_excel(f, sheetname=0, names=['date', 'party', 'priority', 'name', 'area', 'cec', 'remark'], usecols=[0, 1, 2, 3, 5, 6, 7])
     elif re.search('區域', f):
-        df = pd.read_excel(f, names=['date', 'area', 'name_1', 'name_2', 'party', 'cec', 'remark'], usecols=[0, 1, 2, 3, 4, 6, 7])
+        df = pd.read_excel(f, sheetname=0, names=['date', 'area', 'name_1', 'name_2', 'party', 'cec', 'remark'], usecols=[0, 1, 2, 3, 4, 6, 7])
         df['name'] = pd.concat([df['name_1'].dropna(), df['name_2'].dropna()])
     else:
-        df = pd.read_excel(f, names=['date', 'area', 'name', 'party', 'cec', 'remark'], usecols=[0, 1, 2, 3, 4, 5])
+        df = pd.read_excel(f, sheetname=0, names=['date', 'area', 'name', 'party', 'cec', 'remark'], usecols=[0, 1, 2, 3, 4, 5])
     df = df[df['remark'].isnull() & df['name'].notnull()]
     candidates = json.loads(df.to_json(orient='records'))
     for candidate in candidates:
