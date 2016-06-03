@@ -63,7 +63,7 @@ def GetVoteContent(vote_seq, text):
     raw_input()
 
 def iterateVoter(sitting_dict, text, vote_id, decision):
-    for legislator_uid in ly_common.GetLegislatorIdList(c, text.split('\n')[0]):
+    for legislator_uid in ly_common.GetLegislatorIdList(c, text.strip().split('\n')[0]):
         legislator_id = ly_common.GetLegislatorDetailId(c, legislator_uid, sitting_dict["ad"])
         vote_common.upsert_vote_legislator_vote(c, legislator_id, vote_id, decision)
 
@@ -98,6 +98,8 @@ def IterVote(text, sitting_dict):
             else:
                 vote_seq = '001'
             vote_id = '%s-%s' % (sitting_id, vote_seq)
+            print vote_id
+            print vote_id
             content = GetVoteContent(vote_seq, text[:match.start()+2])
             category = u'變更議程順序' if re.search(u'提議(變更議程|\W{0,4}增列)', content.split('\n')[0]) else ''
             if content:
@@ -127,7 +129,7 @@ c = conn.cursor()
 ad = 9
 sitting_ids = vote_common.sittingIdsInAd(c, ad)
 dicts = json.load(open('vote/minutes.json'))
-for meeting in dicts:
+for meeting in reversed(dicts):
     print '[%s]' % meeting['name']
     #--> meeting info already there but meeting_minutes haven't publish
     if not os.path.exists('vote/meeting_minutes/%s.txt' % meeting['name']):
@@ -138,7 +140,7 @@ for meeting in dicts:
     sourcetext = codecs.open(u'vote/meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()
     ms, uid = ly_common.SittingDict(meeting['name'])
     date = ly_common.GetDate(sourcetext)
-    if int(ms.group('ad')) != ad or uid in sitting_ids:
+    if int(ms.group('ad')) != ad:
         print 'Skip'
         continue
     else:
