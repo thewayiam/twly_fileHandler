@@ -17,12 +17,12 @@ url = 'http://data.ly.gov.tw/odw/openDatasetJson.action?id=19&selectTerm=all&pag
 
 # api pages -> page.json -> laws -> bills(with lines)
 
-#i = 1
-#r = requests.get('%s%d' % (url, i))
-#while r.json()['jsonList']:
-#    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
-#    i += 1
-#    r = requests.get('%s%d' % (url, i))
+i = 1
+r = requests.get('%s%d' % (url, i))
+while r.json()['jsonList']:
+    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+    i += 1
+    r = requests.get('%s%d' % (url, i))
 
 laws = {}
 for f in sorted(glob.glob('data/laws/pages/*.json'), key=lambda x : int(x.split('/')[-1].rstrip('.json'))):

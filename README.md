@@ -5,7 +5,7 @@ File handler of [立委投票指南](http://vote.ly.g0v.tw/)
 
 需求
 ======
-postgresql-9.5
+postgresql-9.5      
 pandas >= 0.18 (sudo apt-get install python-pandas)
 
 使用方法
