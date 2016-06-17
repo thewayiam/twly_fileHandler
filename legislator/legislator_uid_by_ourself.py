@@ -31,6 +31,22 @@ def normalize_constituency(constituency):
         dec = dec * 10
     return total
 
+def get_or_create_uid(legislator):
+    identifiers = {legislator['name'], re.sub(u'[\w‧]', '', legislator['name']), re.sub(u'\W', '', legislator['name']).lower(), } - {''}
+    c.execute('''
+        SELECT ld.legislator_id
+        FROM legislator_legislator l, legislator_legislatordetail ld
+        WHERE l.identifiers ?| array[%s]
+    ''' % ','.join(["'%s'" % x for x in identifiers]) + ' and l.uid = ld.legislator_id and ld.ad = %(ad)s', legislator)
+    r = c.fetchone()
+    if r:
+        return r[0]
+    c.execute('''
+        select max(uid)+1
+        from legislator_legislator
+    ''', legislator)
+    return c.fetchone()[0]
+
 def Legislator(legislator):
     legislator['identifiers'] = list((set(legislator['former_names']) | {legislator['name'], re.sub(u'[\w‧]', '', legislator['name']), re.sub(u'\W', '', legislator['name']).lower(), }) - {''})
     legislator['former_names'] = '\n'.join(legislator['former_names']) if legislator.has_key('former_names') else ''
@@ -97,21 +113,21 @@ conn = db_settings.con()
 c = conn.cursor()
 
 f = codecs.open('legislator/no_committees.txt', 'w', encoding='utf-8')
-dict_list = json.load(open('data/twly_crawler/data/merged.json'))
+dict_list = json.load(open('data/twly_crawler/data/9/merged.json'))
 ideal_term_end_year = {'1': 1993, '2': 1996, '3': 1999, '4': 2002, '5': 2005, '6': 2008, '7': 2012, '8': 2016, '9': 2020}
 for legislator in dict_list:
     legislator = ly_common.normalize_person(legislator)
+    legislator['uid'] = get_or_create_uid(legislator)
+    legislator['elected_party'] = legislator.get('elected_party', legislator['party'])
     Legislator(legislator)
-    for term in legislator["each_term"]:
-        term = ly_common.normalize_person(term)
-        LegislatorDetail(legislator["uid"], term, ideal_term_end_year[str(term["ad"])])
-        legislator_id = ly_common.GetLegislatorDetailId(c, legislator["uid"], term["ad"])
-        if term.has_key("committees"):
-            Committees(term["committees"])
-            for committee in term["committees"]:
-                Legislator_Committees(legislator_id, committee)
-        else:
-            f.write('no committees!!, uid: %s, name: %s, ad: %s\n' % (legislator["uid"], term["name"], term["ad"]))
+    LegislatorDetail(legislator['uid'], legislator, ideal_term_end_year[str(legislator['ad'])])
+    legislator_id = ly_common.GetLegislatorDetailId(c, legislator['uid'], legislator['ad'])
+    if legislator.has_key('committees'):
+        Committees(legislator['committees'])
+        for committee in legislator['committees']:
+            Legislator_Committees(legislator_id, committee)
+    else:
+        f.write('no committees!!, uid: %s, name: %s, ad: %s\n' % (legislator["uid"], legislator["name"], legislator["ad"]))
 f.close()
 conn.commit()
 party_change = json.load(open('legislator/party_change.json'))
