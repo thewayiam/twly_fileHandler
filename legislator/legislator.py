@@ -49,7 +49,7 @@ def LegislatorDetail(uid, term, ideal_term_end_year):
     term.pop('county', None)
     if term.has_key('district'):
         term['district'] = u'，'.join([x for x in term['district']])
-    term['term_end'] = {"date": '%04d-01-31' % int(ideal_term_end_year)}
+    term['term_end'] = term.get('term_end') or {"date": '%04d-01-31' % int(ideal_term_end_year)}
     complement = {"uid": uid, "gender": '', "party": '', "caucus": '', "contacts": None, "county": term['constituency'], "constituency": 0, "district": '', "term_start": None, "education": None, "experience": None, "remark": None, "image": '', "links": None}
     match = re.search(u'(?P<county>[\W]{1,2}(縣|市))', term['constituency'])
     if match:
