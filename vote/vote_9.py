@@ -69,20 +69,27 @@ def iterateVoter(sitting_dict, text, vote_id, decision):
 
 def IterEachDecision(votertext, sitting_dict, vote_id):
     mapprove, mreject, mquit = re.search(u'[\s、]贊成[\S]*?者[:：][\d]+人', votertext), re.search(u'[\s、]反對[\S]*?者[:：][\d]+人', votertext), re.search(u'[\s、]棄權者[:：][\d]+人', votertext)
+    mnext = re.search(u'[\s、]贊成[\S]*?者[:：][\d]+人', votertext[mapprove.end():])
     if not mapprove:
         print u'==找不到贊成者==\n', votertext
         raw_input()
     else:
-        iterateVoter(sitting_dict, votertext[mapprove.end():], vote_id, 1)
+        target_list = re.sub(u'\n', u'　', votertext[mapprove.end():mreject.start()])
+        iterateVoter(sitting_dict, target_list, vote_id, 1)
     if not mreject:
         print u'==找不到反對者==\n', votertext
         raw_input()
     else:
-        iterateVoter(sitting_dict, votertext[mreject.end():], vote_id, -1)
+        target_list = re.sub(u'\n', u'　', votertext[mreject.end():mquit.start()])
+        iterateVoter(sitting_dict, target_list, vote_id, -1)
     if not mquit:
         print u'==找不到棄權者==\n', votertext
     else:
-        iterateVoter(sitting_dict, votertext[mquit.end():], vote_id, 0)
+        if mnext:
+            target_list = re.sub(u'\n', u'　', votertext[mquit.end():mapprove.end()+mnext.start()])
+        else:
+            target_list = re.sub(u'\n', u'　', votertext[mquit.end():])
+        iterateVoter(sitting_dict, target_list, vote_id, 0)
     return mapprove, mreject, mquit
 
 def IterVote(text, sitting_dict):
