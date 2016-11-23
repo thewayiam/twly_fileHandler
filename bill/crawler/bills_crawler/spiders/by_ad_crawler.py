@@ -55,8 +55,16 @@ class Spider(scrapy.Spider):
         item = {tr.xpath('td[1]/nobr/text()').extract_first(): first_or_list(tr.xpath('td[1]/nobr/text()').extract_first(), tr.xpath('td[2]//text()').extract()) for tr in trs}
         item.pop(u"關係文書", None) # this one not proper info, parse below
         has_motions = response.xpath(u'//img[@src="/lylegis/images/ref4.png"]/parent::a/@href').extract_first()
+        bill_ref_pdf = response.xpath(u'//img[@src="/lylgmeet/img/view.png"]/parent::a/@href').extract_first()
+        bill_ref_doc = response.xpath(u'//img[@src="/lylgmeet/img/doc_icon.png"]/parent::a/@href').extract_first()
+        if bill_ref_pdf:
+            bill_ref = urljoin(response.url, '/lgcgi/lgmeetimage?%s' % bill_ref_pdf.split('^')[-1])
+        elif bill_ref_doc:
+            bill_ref = urljoin(response.url, bill_ref_doc)
+        else:
+            bill_ref = ''
         item['links'] = {
-            u'關係文書': urljoin(response.url, '/lgcgi/lgmeetimage?%s' % response.xpath(u'//img[@src="/lylgmeet/img/view.png"]/parent::a/@href').extract_first().split('^')[-1]),
+            u'關係文書': bill_ref,
             u'審議進度': urljoin(response.url, has_motions) if has_motions else None
         }
         if has_motions:
