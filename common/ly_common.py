@@ -79,10 +79,10 @@ def GetLegislatorIdList(c, text):
     text = text.strip(u'[　\s]')
     text = re.sub(u'([^　\w])　([^　\w])　', u'\g<1>\g<2>　', text) # e.g. 楊　曜=>楊曜, 包含句首
     text = re.sub(u'　([^　\w])　([^　\w])', u'　\g<1>\g<2>', text) # e.g. 楊　曜=>楊曜, 包含句尾
-    text = re.sub(u'(\w+) (\w+)　', u'\g<1>\g<2>　', text) # e.g. Kolas Yotaka=>KolasYotaka, 包含句首
-    text = re.sub(u'　(\w+) (\w+)', u'　\g<1>\g<2>', text) # e.g. Kolas Yotaka=>KolasYotaka, 包含句尾
+    text = re.sub(u'(\w+)[ 　](\w+)　', u'\g<1>\g<2>　', text) # e.g. Kolas Yotaka=>KolasYotaka, 包含句首
+    text = re.sub(u'　(\w+)[ 　](\w+)', u'　\g<1>\g<2>', text) # e.g. Kolas Yotaka=>KolasYotaka, 包含句尾
     text = re.sub(u'^([^　\w])　([^　\w])$', u'\g<1>\g<2>', text) # e.g. 楊　曜=>楊曜, 單獨一人
-    text = re.sub(u'^(\w+) (\w+)$', u'\g<1>\g<2>', text) # e.g. Kolas Yotaka=>KolasYotaka, 單獨一人
+    text = re.sub(u'^(\w+)[ 　](\w+)$', u'\g<1>\g<2>', text) # e.g. Kolas Yotaka=>KolasYotaka, 單獨一人
     for name in text.split():
         name = re.sub(u'(.*)[）)。】」]$', '\g<1>', name)   # 立委名字後有標點符號
         legislator_id = GetLegislatorId(c, name)

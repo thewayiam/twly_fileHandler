@@ -68,27 +68,28 @@ def iterateVoter(sitting_dict, text, vote_id, decision):
         vote_common.upsert_vote_legislator_vote(c, legislator_id, vote_id, decision)
 
 def IterEachDecision(votertext, sitting_dict, vote_id):
+    votertext = re.sub(u'(\w+)\r\n(\w+)', u'\g<1>\g<2>', votertext) # e.g. Kolasi ^M Yotaka=>KolasYotaka, EOL
     mapprove, mreject, mquit = re.search(u'[\s、]贊成[\S]*?者[:：][\d]+人', votertext), re.search(u'[\s、]反對[\S]*?者[:：][\d]+人', votertext), re.search(u'[\s、]棄權者[:：][\d]+人', votertext)
     mnext = re.search(u'[\s、]贊成[\S]*?者[:：][\d]+人', votertext[mapprove.end():])
     if not mapprove:
         print u'==找不到贊成者==\n', votertext
         raw_input()
     else:
-        target_list = re.sub(u'\n', u'　', votertext[mapprove.end():mreject.start()])
+        target_list = re.sub(u'\n', u'　　', votertext[mapprove.end():mreject.start()])
         iterateVoter(sitting_dict, target_list, vote_id, 1)
     if not mreject:
         print u'==找不到反對者==\n', votertext
         raw_input()
     else:
-        target_list = re.sub(u'\n', u'　', votertext[mreject.end():mquit.start()])
+        target_list = re.sub(u'\n', u'　　', votertext[mreject.end():mquit.start()])
         iterateVoter(sitting_dict, target_list, vote_id, -1)
     if not mquit:
         print u'==找不到棄權者==\n', votertext
     else:
         if mnext:
-            target_list = re.sub(u'\n', u'　', votertext[mquit.end():mapprove.end()+mnext.start()])
+            target_list = re.sub(u'\n', u'　　', votertext[mquit.end():mapprove.end()+mnext.start()])
         else:
-            target_list = re.sub(u'\n', u'　', votertext[mquit.end():])
+            target_list = re.sub(u'\n', u'　　', votertext[mquit.end():])
         iterateVoter(sitting_dict, target_list, vote_id, 0)
     return mapprove, mreject, mquit
 

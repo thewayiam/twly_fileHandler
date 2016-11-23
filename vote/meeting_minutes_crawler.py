@@ -42,5 +42,5 @@ class Spider(scrapy.Spider):
         cmd = u"sed -n '/議事錄/,/allans=0/p' t.txt | grep . > %s" % response.request.meta['op']
         subprocess.call(cmd, shell=True)
         ret = subprocess.check_output("rm t.txt && wc -l %s" % response.request.meta['op'], shell=True)
-        if int(ret.split()[0]) < 5: # transform haven't finished
+        if int(ret.split()[0]) < 3: # transform haven't finished
             subprocess.call("rm %s" % response.request.meta['op'], shell=True)
