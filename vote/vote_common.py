@@ -62,6 +62,16 @@ def vote_list(c):
     ''')
     return c.fetchall()
 
+def delete_not_in_terms_voting_record(c, vote_id, vote_ad, vote_date):
+    c.execute('''
+        delete from vote_legislator_vote
+        where id in (
+            select vl.id
+            from vote_vote v, vote_legislator_vote vl, legislator_legislatordetail l
+            where v.uid = vl.vote_id and l.id = vl.legislator_id and l.ad = %s and (l.term_start > %s or cast(l.term_end::json->>'date' as date) <= %s) and v.uid = %s
+        )
+    ''', (vote_ad, vote_date, vote_date, vote_id))
+
 def not_voting_legislator_list(c, vote_id, vote_ad, vote_date):
     c.execute('''
         select id
@@ -139,6 +149,7 @@ def not_voting_and_results(c):
     for vote_id, vote_ad, vote_date in vote_list(c):
         for legislator_id in not_voting_legislator_list(c, vote_id, vote_ad, vote_date):
             insert_not_voting_record(c, legislator_id, vote_id)
+        delete_not_in_terms_voting_record(c, vote_id, vote_ad, vote_date)
         key, value = get_vote_results(c, vote_id)
         update_vote_results(c, vote_id, dict(zip(key, value)))
 # <-- not voting & vote results end
