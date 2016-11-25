@@ -13,6 +13,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from pyvirtualdisplay import Display
 
 
 def first_or_list(key, data):
@@ -31,6 +32,8 @@ class Spider(scrapy.Spider):
 
     def __init__(self, ad=None, *args, **kwargs):
         super(Spider, self).__init__(*args, **kwargs)
+        self.display = Display(visible=0, size=(800, 600))
+        self.display.start()
         self.driver = webdriver.Chrome("/var/chromedriver/chromedriver")
         self.ad = ad
 
