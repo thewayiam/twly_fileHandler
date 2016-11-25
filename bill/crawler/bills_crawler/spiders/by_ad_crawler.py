@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from time import sleep
+from random import randint
 import re
 import urllib
 import urllib2
@@ -6,6 +8,11 @@ from urlparse import urljoin
 import scrapy
 from scrapy.http import Request, FormRequest
 from scrapy.selector import Selector
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 def first_or_list(key, data):
@@ -24,6 +31,7 @@ class Spider(scrapy.Spider):
 
     def __init__(self, ad=None, *args, **kwargs):
         super(Spider, self).__init__(*args, **kwargs)
+        self.driver = webdriver.Chrome("/var/chromedriver/chromedriver")
         self.ad = ad
 
     def parse(self, response):
@@ -38,17 +46,28 @@ class Spider(scrapy.Spider):
 
     def parse_max_per_page(self, response):
         href = response.xpath('//select[@onchange="instback(this)"]/option[re:test(text(), "^\d+$")]/@value').extract()
-        yield Request(urljoin(response.url, href[-1]), callback=self.parse_law_bill_list, dont_filter=True, meta={'page': 1})
+        yield Request(urljoin(response.url, href[-1]), callback=self.parse_law_bill_list, dont_filter=True)
 
     def parse_law_bill_list(self, response):
-        nodes = response.xpath('//a[@class="link02"]')
-        for node in nodes[1::2]:
-            href = node.xpath('@href').extract_first()
-            yield Request(urljoin(response.url, href), callback=self.parse_law_bill, dont_filter=True)
-        page = response.request.meta['page']
-        href = response.xpath('//a[@class="linkpage" and re:test(normalize-space(text()), "%d")]/@href' % (page+1)).extract_first()
-        if href:
-            yield Request(urljoin(response.url, href), callback=self.parse_law_bill_list, dont_filter=True, meta={'page': (page+1)})
+        self.driver.get(response.url)
+        while (True):
+            try:
+                element = WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.ID, "block30"))
+                )
+            except:
+                continue
+            sleep(randint(1, 2))
+            nodes = Selector(text=self.driver.page_source).xpath('//a[@class="link02"]')
+            for node in nodes[1::2]:
+                href = node.xpath('@href').extract_first()
+                yield Request(urljoin(response.url, href), callback=self.parse_law_bill, dont_filter=True)
+            try:
+                next_page = self.driver.find_element_by_xpath('//input[@name="_IMG_次頁"]')
+                next_page.click()
+            except:
+                break
+        self.driver.close()
 
     def parse_law_bill(self, response):
         trs = response.xpath('//tr[@class="rectr"]')
