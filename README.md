@@ -21,6 +21,12 @@ $ git submodule update
 ```
 $ python -m legislator.legislator
 ```
+In begining of ad=9, source didn't provide uid of legislator, we maintain it ourself for temporary usage.
+
+```
+$ python -m legislator.legislator_uid_by_ourself
+$ mv merged_uid_by_ourself.json to_where_you_want
+```
 
 ## 法條修正草案
 Pass ad(屆期) to crawler, if output file already exist please remove it first manually, ad=9 for example:

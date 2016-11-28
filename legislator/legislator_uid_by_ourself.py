@@ -56,7 +56,9 @@ def Legislator(legislator):
         ON CONFLICT (uid)
         DO UPDATE
         SET name = %(name)s, former_names = %(former_names)s, identifiers = %(identifiers)s
+        returning uid
     ''', legislator)
+    return c.fetchone()[0]
 
 def LegislatorDetail(uid, term, ideal_term_end_year):
     for key in ['education', 'experience', 'remark']:
@@ -119,7 +121,8 @@ for legislator in dict_list:
     legislator = ly_common.normalize_person(legislator)
     legislator['uid'] = get_or_create_uid(legislator)
     legislator['elected_party'] = legislator.get('elected_party', legislator['party'])
-    Legislator(legislator)
+    uid = Legislator(legislator)
+    legislator['uid'] = uid
     LegislatorDetail(legislator['uid'], legislator, ideal_term_end_year[str(legislator['ad'])])
     legislator_id = ly_common.GetLegislatorDetailId(c, legislator['uid'], legislator['ad'])
     if legislator.has_key('committees'):
@@ -139,3 +142,5 @@ for instance in party_change:
     ''', instance)
 conn.commit()
 
+with codecs.open('merged_uid_by_ourself.json', 'w', encoding='utf-8') as outfile:
+    json.dump(dict_list, outfile, ensure_ascii=False)
