@@ -116,13 +116,15 @@ c = conn.cursor()
 
 f = codecs.open('legislator/no_committees.txt', 'w', encoding='utf-8')
 dict_list = json.load(open('data/twly_crawler/data/9/merged.json'))
+json_output = []
 ideal_term_end_year = {'1': 1993, '2': 1996, '3': 1999, '4': 2002, '5': 2005, '6': 2008, '7': 2012, '8': 2016, '9': 2020}
 for legislator in dict_list:
-    legislator = ly_common.normalize_person(legislator)
     legislator['uid'] = get_or_create_uid(legislator)
+    legislator_origin = legislator.copy()
+    json_output.append(legislator_origin)
+    legislator = ly_common.normalize_person(legislator)
     legislator['elected_party'] = legislator.get('elected_party', legislator['party'])
-    uid = Legislator(legislator)
-    legislator['uid'] = uid
+    Legislator(legislator)
     LegislatorDetail(legislator['uid'], legislator, ideal_term_end_year[str(legislator['ad'])])
     legislator_id = ly_common.GetLegislatorDetailId(c, legislator['uid'], legislator['ad'])
     if legislator.has_key('committees'):
@@ -142,5 +144,6 @@ for instance in party_change:
     ''', instance)
 conn.commit()
 
+# for g0v/twly_crawler and g0v/twlyparser
 with codecs.open('merged_uid_by_ourself.json', 'w', encoding='utf-8') as outfile:
-    json.dump(dict_list, outfile, ensure_ascii=False)
+    json.dump(json_output, outfile, ensure_ascii=False)
