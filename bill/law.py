@@ -4,7 +4,7 @@ import re
 import json
 import glob
 import codecs
-import requests
+import subprocess
 import difflib
 
 from common import ly_common
@@ -18,11 +18,16 @@ url = 'http://data.ly.gov.tw/odw/openDatasetJson.action?id=19&selectTerm=all&pag
 # api pages -> page.json -> laws -> bills(with lines)
 
 i = 1
-r = requests.get('%s%d' % (url, i))
-while r.json()['jsonList']:
-    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+while True:
+    file_path = 'data/laws/pages/%d.json' % i
+    cmd = 'wget -Nc -O %s %s' % (file_path, '%s%d' % (url, i))
+    subprocess.call(cmd, shell=True)
+    cmd = 'grep \'{\"jsonList\":\[\]}\' %s | wc -l' % file_path
+    if re.search('1', subprocess.check_output(cmd, shell=True)):
+        cmd = 'rm %s' % file_path
+        subprocess.call(cmd, shell=True)
+        break
     i += 1
-    r = requests.get('%s%d' % (url, i))
 
 laws = {}
 for f in sorted(glob.glob('data/laws/pages/*.json'), key=lambda x : int(x.split('/')[-1].rstrip('.json'))):
