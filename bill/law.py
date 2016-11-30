@@ -6,6 +6,8 @@ import glob
 import codecs
 import requests
 import difflib
+import ast
+from sys import argv
 
 from common import ly_common
 from common import db_settings
@@ -17,13 +19,30 @@ url = 'http://data.ly.gov.tw/odw/openDatasetJson.action?id=19&selectTerm=all&pag
 
 # api pages -> page.json -> laws -> bills(with lines)
 
-i = 1
-r = requests.get('%s%d' % (url, i))
-while r.json()['jsonList']:
-    json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
-    i += 1
-    r = requests.get('%s%d' % (url, i))
+try:
+    latest_pages_num = ast.literal_eval(argv[1])['pages']
+except:
+    latest_pages_num = 0
+try:
+    i = int(sorted(glob.glob('data/laws/pages/*.json'), key=lambda x : int(x.split('/')[-1].rstrip('.json')), reverse=True)[latest_pages_num].split('/')[-1].rstrip('.json'))
+except IndexError:
+    i = 1
+print 'start from page: %d' % i
+r = requests.get('%s%d' % (url, i), timeout=60)
+if r.status_code == 200:
+    try:
+        while r.json()['jsonList']:
+            json.dump(r.json(), codecs.open('data/laws/pages/%d.json' % i, 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
+            i += 1
+            r = requests.get('%s%d' % (url, i), timeout=60)
+    except ValueError:
+        pass
+    except Exception, e:
+        print 'response content: ' + r.content
+        print 'Exception: ' + e
 
+print 'others'
+raw_input()
 laws = {}
 for f in sorted(glob.glob('data/laws/pages/*.json'), key=lambda x : int(x.split('/')[-1].rstrip('.json'))):
     page = json.load(open(f))
