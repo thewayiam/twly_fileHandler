@@ -36,13 +36,17 @@ if r.status_code == 200:
             i += 1
             r = requests.get('%s%d' % (url, i), timeout=60)
     except ValueError:
+        print 'ValueError at page: %d' % i
         pass
     except Exception, e:
-        print 'response content: ' + r.content
-        print 'Exception: ' + e
+        print 'response content:'
+        print r.content
+        print 'Exception: '
+        print e
+else:
+    print 'response status_code: ' + r.status_code
 
-print 'others'
-raw_input()
+print 'law process start'
 laws = {}
 for f in sorted(glob.glob('data/laws/pages/*.json'), key=lambda x : int(x.split('/')[-1].rstrip('.json'))):
     page = json.load(open(f))
@@ -117,3 +121,4 @@ for billNo, bill in laws.items():
     ''', [bill_lines['no'], bill_lines['ad'], bill_lines, bill_id, bill_lines['no'], ])
 #json.dump(bills, codecs.open('data/laws/lines.json', 'w', encoding='utf-8'), indent=2, ensure_ascii=False)
 conn.commit()
+print 'law process end'
