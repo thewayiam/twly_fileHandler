@@ -37,6 +37,9 @@ class Spider(scrapy.Spider):
         self.driver = webdriver.Chrome("/var/chromedriver/chromedriver")
         self.ad = ad
 
+    def spider_closed(self, spider):
+        self.display.close()
+
     def parse(self, response):
         yield FormRequest.from_response(
             response,
