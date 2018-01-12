@@ -8,8 +8,8 @@ import glob
 import codecs
 import psycopg2
 
-import db_settings
-import ly_common
+from common import db_settings
+from common import ly_common
 
 
 def candidate_term_id(candidate):
@@ -45,9 +45,10 @@ def PoliticalContributions(data):
         print data
         raise
 
+ad_election_year = {'2016': '9', '2012': '8'}
 conn = db_settings.con()
 c = conn.cursor()
-for f in glob.glob('*.json'):
+for f in glob.glob('*109*.json'):
     dict_list = json.load(open(f))
     for candidate in dict_list:
         for wrong, right in [(u'楊煌', u'楊烱煌')]:
@@ -58,6 +59,7 @@ for f in glob.glob('*.json'):
         pc = {key: candidate[key] for key in ["in_total", "out_total", "balance"]}
         pc.update({'in': income, 'out': expenses})
         candidate['politicalcontributions'] = json.dumps(pc)
+        candidate['ad'] = ad_election_year[candidate['election_year']]
         candidate['id'] = candidate_term_id(candidate)
         PoliticalContributions(candidate)
 conn.commit()

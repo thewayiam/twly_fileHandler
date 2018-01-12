@@ -111,7 +111,11 @@ county_versions = json.load(open('candidates/county_versions.json'))
 files = [f for f in glob.glob('candidates/8/register.xls')]
 for f in files:
     for sheet in [0, u'不分區']:
-        df = pd.read_excel(f, sheetname=sheet, names=['date', 'area', 'name', 'party', 'cec', 'remark'], usecols=[0, 1, 2, 3, 4, 5])
+        if sheet == 0:
+            df = pd.read_excel(f, sheetname=sheet, names=['date', 'area', 'name', 'party', 'cec', 'remark'], usecols=[0, 1, 2, 3, 4, 5])
+        else:
+            df = pd.read_excel(f, sheetname=sheet, names=['date', 'area', 'name', 'party', 'cec'], usecols=[0, 1, 2, 3, 4])
+            df['remark'] = None
         df = df[df['remark'].isnull() & df['name'].notnull()]
         candidates = json.loads(df.to_json(orient='records'))
         for candidate in candidates:
