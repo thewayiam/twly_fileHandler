@@ -15,7 +15,7 @@ from common import ly_common
 def candidate_term_id(candidate):
     # same name, county, ad
     c.execute('''
-        SELECT id
+        SELECT candidate_id
         FROM candidates_terms
         WHERE name = %(name)s AND ad = %(ad)s AND county = %(county)s
     ''', candidate)
@@ -26,7 +26,7 @@ def candidate_term_id(candidate):
     m = re.match(u'(?P<cht>.+?)[a-zA-Z]', candidate['name'])
     candidate['name_like'] = '%s%%' % m.group('cht') if m else '%s%%' % candidate['name']
     c.execute('''
-        SELECT id
+        SELECT candidate_id
         FROM candidates_terms
         WHERE name like %(name_like)s AND ad = %(ad)s AND county = %(county)s
     ''', candidate)
@@ -35,20 +35,30 @@ def candidate_term_id(candidate):
         return r[0]
 
 def PoliticalContributions(data):
-    try:
-        c.execute('''
-            UPDATE candidates_terms
-            SET politicalcontributions = %(politicalcontributions)s
-            WHERE id = %(id)s
-        ''', data)
-    except Exception, e:
-        print data
-        raise
+    '''
+    Store political contrbution history to candidate, e.g. all record before 2018(<=) will store into candidate which election_year less than 2018(<=)
+    '''
+
+    c.execute('''
+        UPDATE candidates_terms
+        SET politicalcontributions = COALESCE(politicalcontributions, '[]'::jsonb) || %(politicalcontributions)s::jsonb
+        WHERE candidate_id = %(candidate_uid)s AND ad >= %(ad)s
+    ''', data)
+    c.execute('''
+        UPDATE candidates_terms
+        SET politicalcontributions = (SELECT jsonb_agg(x) FROM (
+            SELECT x from (
+                SELECT DISTINCT(value) as x
+                FROM jsonb_array_elements(politicalcontributions)
+            ) t ORDER BY x->'ad' DESC
+        ) tt)
+        WHERE candidate_id = %(candidate_uid)s AND ad >= %(ad)s
+    ''', data)
 
 ad_election_year = {'2016': '9', '2012': '8'}
 conn = db_settings.con()
 c = conn.cursor()
-for f in glob.glob('*109*.json'):
+for f in glob.glob('*.json'):
     dict_list = json.load(open(f))
     for candidate in dict_list:
         for wrong, right in [(u'楊煌', u'楊烱煌')]:
@@ -58,8 +68,15 @@ for f in glob.glob('*109*.json'):
         expenses = {key: candidate[key] for key in ["out_personnel", "out_propagate", "out_campaign_vehicle", "out_campaign_office", "out_rally", "out_travel", "out_miscellaneous", "out_return", "out_exchequer", "out_public_relation"]}
         pc = {key: candidate[key] for key in ["in_total", "out_total", "balance"]}
         pc.update({'in': income, 'out': expenses})
+        if not candidate.has_key('election_year'):
+            for year, ad in ad_election_year.items():
+                if ad == candidate['ad']:
+                    candidate['election_year'] = year
+                    break
+        if not candidate.has_key('ad'):
+            candidate['ad'] = ad_election_year[candidate['election_year']]
+        pc = [{'ad': candidate['ad'], 'election_year': candidate['election_year'], 'pc': pc}]
         candidate['politicalcontributions'] = json.dumps(pc)
-        candidate['ad'] = ad_election_year[candidate['election_year']]
-        candidate['id'] = candidate_term_id(candidate)
+        candidate['candidate_uid'] = candidate_term_id(candidate)
         PoliticalContributions(candidate)
 conn.commit()
