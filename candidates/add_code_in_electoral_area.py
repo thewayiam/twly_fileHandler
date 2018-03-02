@@ -47,10 +47,17 @@ else:
     with codecs.open('data/candidates/village_code_2018.json', 'w', encoding='utf-8') as outfile:
         outfile.write(json.dumps(maps, indent=2, ensure_ascii=False))
 
+
+wiki_ref = json.load(open('data/candidates/national_constituencies_from_wikidata.json'))
+
+num_ref = [u'一', u'二', u'三', u'四', u'五', u'六', u'七', u'八', u'九', u'十', u'十一', u'十二', u'十三', u'十四', u'十五', u'十六', u'十七', u'十八', u'十九']
 target = json.load(open('data/candidates/election_region_2016.json'))
-target_out = target.copy()
 for county, v in target.items():
     for region in v['regions']:
+        for r in wiki_ref:
+            if r['itemLabel'] == u'%s第%s選舉區' % (county, num_ref[region['constituency']-1]):
+                region['wikidata_item'] = r['item']
+                break
         for district, villages in region['district'].items():
             villages_code = []
             for village in villages:
@@ -60,5 +67,5 @@ for county, v in target.items():
                 print key
                 villages_code.append(maps[key]['village_code'])
             region['district'][district] = villages_code
-with codecs.open('data/candidates/election_region_with_village_code_2016.json', 'w', encoding='utf-8') as outfile:
+with codecs.open('data/candidates/election_region_with_village_code_and_wikidata_id_2016.json', 'w', encoding='utf-8') as outfile:
     outfile.write(json.dumps(target, indent=2, ensure_ascii=False))
