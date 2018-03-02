@@ -793,6 +793,7 @@
       {
         "electedperson": 1, 
         "constituency": 1, 
+        "wikidata_item": "http://www.wikidata.org/entity/Q10949153", 
         "district": {
           "大同鄉": [
             "10002110001", 
@@ -3536,6 +3537,7 @@
       {
         "electedperson": 1, 
         "constituency": 1, 
+        "wikidata_item": "http://www.wikidata.org/entity/Q17023592", 
         "district": {
           "中山區": [
             "10017050001", 
@@ -3718,6 +3720,7 @@
       {
         "electedperson": 1, 
         "constituency": 1, 
+        "wikidata_item": "http://www.wikidata.org/entity/Q17028006", 
         "district": {
           "成功鎮": [
             "10014020001", 
@@ -3908,6 +3911,7 @@
       {
         "electedperson": 1, 
         "constituency": 1, 
+        "wikidata_item": "http://www.wikidata.org/entity/Q19432864", 
         "district": {
           "東引鄉": [
             "09007040001", 
@@ -4256,6 +4260,7 @@
       {
         "electedperson": 1, 
         "constituency": 1, 
+        "wikidata_item": "http://www.wikidata.org/entity/Q17033813", 
         "district": {
           "白沙鄉": [
             "10016030001", 
@@ -4704,6 +4709,7 @@
       {
         "electedperson": 1, 
         "constituency": 1, 
+        "wikidata_item": "http://www.wikidata.org/entity/Q10924121", 
         "district": {
           "東區": [
             "10020010001", 
@@ -4803,6 +4809,7 @@
       {
         "electedperson": 1, 
         "constituency": 1, 
+        "wikidata_item": "http://www.wikidata.org/entity/Q11084066", 
         "district": {
           "新埔鎮": [
             "10004030001", 
@@ -6701,6 +6708,7 @@
       {
         "electedperson": 1, 
         "constituency": 1, 
+        "wikidata_item": "http://www.wikidata.org/entity/Q17029209", 
         "district": {
           "鳳林鎮": [
             "10015020001", 
@@ -10082,6 +10090,7 @@
       {
         "electedperson": 1, 
         "constituency": 1, 
+        "wikidata_item": "http://www.wikidata.org/entity/Q19432865", 
         "district": {
           "烏坵鄉": [
             "09020060001", 
@@ -10142,6 +10151,7 @@
       {
         "electedperson": 1, 
         "constituency": 1, 
+        "wikidata_item": "http://www.wikidata.org/entity/Q11084018", 
         "district": {
           "東區": [
             "10018010001", 

@@ -58,6 +58,11 @@ for county, v in target.items():
             if r['itemLabel'] == u'%s第%s選舉區' % (county, num_ref[region['constituency']-1]):
                 region['wikidata_item'] = r['item']
                 break
+        if not region.get('wikidata_item') and region['constituency'] == 1:
+            for r in wiki_ref:
+                if r['itemLabel'] == u'%s選舉區' % (county):
+                    region['wikidata_item'] = r['item']
+                    break
         for district, villages in region['district'].items():
             villages_code = []
             for village in villages:
