@@ -109,7 +109,9 @@ def IterVote(text, sitting_dict):
                     vote_seq = '%03d' % seq
                     vote_id = '%s-%s' % (sitting_id, vote_seq)
                     print vote_id
-                    content = GetVoteContent(vote_seq, text[:match.start()+2]) + u'\n'.join(votertext.split('\n')[1:3])
+                    head_of_votertext = re.search(u'[（(]\s*%d\s*[）)].+?[:：]' % seq, votertext).group()
+                    print head_of_votertext
+                    content = GetVoteContent(vote_seq, text[:match.start()+2]) + head_of_votertext
                     category = u'變更議程順序' if re.search(u'提議(變更議程|\W{0,4}增列)', content.split('\n')[0]) else ''
                     if content:
                         vote_common.upsert_vote(c, vote_id, sitting_id, vote_seq, category, content)
