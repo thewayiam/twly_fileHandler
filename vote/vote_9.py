@@ -102,15 +102,14 @@ def IterVote(text, sitting_dict):
         votertext = text[mvoter.end():]
         for match in re.finditer(u'附[後件][（(】。](?P<vote_seq_from>\d+)?(?:[）)][至、-][（(])?(?P<vote_seq_to>\d+)?', text):
             print match.group()
-            for x in match.groups():
-                print x
+            print match.groups()
             # complicated range type e.g. 第9屆第4會期第1次臨時會第2次會議
             if match.group('vote_seq_from') and match.group('vote_seq_to'):
                 for seq in range(int(match.group('vote_seq_from')), int(match.group('vote_seq_to'))+1):
                     vote_seq = '%03d' % seq
                     vote_id = '%s-%s' % (sitting_id, vote_seq)
                     print vote_id
-                    content = GetVoteContent(vote_seq, text[:match.start()+2])
+                    content = GetVoteContent(vote_seq, text[:match.start()+2]) + u'\n'.join(votertext.split('\n')[1:3])
                     category = u'變更議程順序' if re.search(u'提議(變更議程|\W{0,4}增列)', content.split('\n')[0]) else ''
                     if content:
                         vote_common.upsert_vote(c, vote_id, sitting_id, vote_seq, category, content)
@@ -154,7 +153,8 @@ c = conn.cursor()
 ad = 9
 sitting_ids = vote_common.sittingIdsInAd(c, ad)
 dicts = json.load(open('vote/minutes.json'))
-for meeting in reversed(dicts):
+#for meeting in reversed(dicts):
+for meeting in dicts[:7]:
     print '[%s]' % meeting['name']
     #--> meeting info already there but meeting_minutes haven't publish
     if not os.path.exists('vote/meeting_minutes/%s.txt' % meeting['name']):

@@ -35,8 +35,11 @@ class Spider(scrapy.Spider):
 
     def html2txt(self, response):
         r = requests.get(response.url)
-        r.encoding = 'big5'
-        soup = BeautifulSoup(r.text, 'lxml')
+        if not re.search('議事錄', r.content):
+            r.encoding = 'big5'
+            soup = BeautifulSoup(r.text, 'lxml')
+        else:
+            soup = BeautifulSoup(r.content, 'lxml')
         with codecs.open('t.txt', 'w', encoding='utf-8') as f:
             f.write(soup.get_text())
 #       cmd = u"sed -n '/議事錄/,/allans=0/p' t.txt | tr '傅萁' '傅崐萁' | grep . > %s" % response.request.meta['op']
