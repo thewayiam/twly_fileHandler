@@ -153,8 +153,7 @@ c = conn.cursor()
 ad = 9
 sitting_ids = vote_common.sittingIdsInAd(c, ad)
 dicts = json.load(open('vote/minutes.json'))
-#for meeting in reversed(dicts):
-for meeting in dicts[:7]:
+for meeting in reversed(dicts):
     print '[%s]' % meeting['name']
     #--> meeting info already there but meeting_minutes haven't publish
     if not os.path.exists('vote/meeting_minutes/%s.txt' % meeting['name']):
