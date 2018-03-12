@@ -100,20 +100,37 @@ def IterVote(text, sitting_dict):
     mvoter = re.search(u'記名表決結果名單[:：]', text)
     if mvoter:
         votertext = text[mvoter.end():]
-        for match in re.finditer(u'附後[（(】。](?P<vote_seq>[\d]+)?', text):
-            if match.group('vote_seq'):
-                vote_seq = '%03d' % int(match.group('vote_seq'))
+        for match in re.finditer(u'附[後件][（(】。](?P<vote_seq_from>\d+)?(?:[）)][至、-][（(])?(?P<vote_seq_to>\d+)?', text):
+            print match.group()
+            for x in match.groups():
+                print x
+            # complicated range type e.g. 第9屆第4會期第1次臨時會第2次會議
+            if match.group('vote_seq_from') and match.group('vote_seq_to'):
+                for seq in range(int(match.group('vote_seq_from')), int(match.group('vote_seq_to'))+1):
+                    vote_seq = '%03d' % seq
+                    vote_id = '%s-%s' % (sitting_id, vote_seq)
+                    print vote_id
+                    content = GetVoteContent(vote_seq, text[:match.start()+2])
+                    category = u'變更議程順序' if re.search(u'提議(變更議程|\W{0,4}增列)', content.split('\n')[0]) else ''
+                    if content:
+                        vote_common.upsert_vote(c, vote_id, sitting_id, vote_seq, category, content)
+                        mapprove, mreject, mquit = IterEachDecision(votertext, sitting_dict, vote_id)
+                    votertext = votertext[(mquit or mreject or mapprove).end():]
+            # normal
             else:
-                vote_seq = '001'
-            vote_id = '%s-%s' % (sitting_id, vote_seq)
-            print vote_id
-            print vote_id
-            content = GetVoteContent(vote_seq, text[:match.start()+2])
-            category = u'變更議程順序' if re.search(u'提議(變更議程|\W{0,4}增列)', content.split('\n')[0]) else ''
-            if content:
-                vote_common.upsert_vote(c, vote_id, sitting_id, vote_seq, category, content)
-                mapprove, mreject, mquit = IterEachDecision(votertext, sitting_dict, vote_id)
-            votertext = votertext[(mquit or mreject or mapprove).end():]
+                if match.group('vote_seq_from'):
+                    vote_seq = '%03d' % int(match.group('vote_seq_from'))
+                    vote_id = '%s-%s' % (sitting_id, vote_seq)
+                else:
+                    vote_seq = '001'
+                    vote_id = '%s-%s' % (sitting_id, vote_seq)
+                print vote_id
+                content = GetVoteContent(vote_seq, text[:match.start()+2])
+                category = u'變更議程順序' if re.search(u'提議(變更議程|\W{0,4}增列)', content.split('\n')[0]) else ''
+                if content:
+                    vote_common.upsert_vote(c, vote_id, sitting_id, vote_seq, category, content)
+                    mapprove, mreject, mquit = IterEachDecision(votertext, sitting_dict, vote_id)
+                votertext = votertext[(mquit or mreject or mapprove).end():]
         if not match:
             print u'有記名表決結果名單無附後'
     else:
@@ -146,6 +163,7 @@ for meeting in reversed(dicts):
         continue
     #<--
     sourcetext = codecs.open(u'vote/meeting_minutes/%s.txt' % meeting['name'], 'r', 'utf-8').read()
+    sourcetext = re.sub(u'顏寬�', u'顏寬恒', sourcetext)
     ms, uid = ly_common.SittingDict(meeting['name'])
     date = ly_common.GetDate(sourcetext)
     if int(ms.group('ad')) != ad:

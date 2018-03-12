@@ -32,7 +32,7 @@ $ mv merged_uid_by_ourself.json to_where_you_want
 Pass ad(屆期) to crawler, if output file already exist please remove it first manually, ad=9 for example:
 ```
 bill/crawler$ rm -f bills_9.json	
-bill/crawler$ scrapy crawl lis_by_ad -a ad=9 -o bills_9.json -t json	
+bill/crawler$ scrapy crawl lis_by_ad -a ad=9 -o bills_9.json -t json -s FEED_EXPORT_ENCODING=utf-8	
 $ python -m bill.parser_lis	'{"ad": 9}'	
 $ python -m bill.law
 ```
@@ -42,7 +42,7 @@ vote_9 的9是立法院屆期
 
 ```
 vote$ rm minutes.json
-vote$ scrapy runspider meeting_minutes_crawler.py -o minutes.json
+vote$ scrapy runspider meeting_minutes_crawler.py -o minutes.json -s FEED_EXPORT_ENCODING=utf-8
 $ python -m vote.vote_9
 $ python -m vote.vote_8
 $ python -m vote.vote_7
