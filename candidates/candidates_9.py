@@ -75,6 +75,7 @@ def get_or_create_uid(person):
     return r[0] if r else uuid.uuid4().hex
 
 def insertCandidates(candidate):
+    candidate['identifiers'] = list(({candidate['name'], re.sub(u'[\w‧]', '', candidate['name']), re.sub(u'\W', '', candidate['name']).lower(), }) - {''})
     candidate['ad'] = ad
     candidate['previous_county'] = candidate['county']
     for county_change in county_versions.get(str(ad), []):
@@ -95,9 +96,11 @@ def insertCandidates(candidate):
     complement = {"number": None, "birth": None, "gender": '', "party": '', "priority": None, "contact_details": None, "district": '', "elected": None, "votes": None, "education": None, "experience": None, "remark": None, "image": '', "links": None, "platform": ''}
     complement.update(candidate)
     c.execute('''
-        INSERT INTO candidates_candidates(uid, name, birth)
-        SELECT %(uid)s, %(name)s, %(birth)s
-        WHERE NOT EXISTS (SELECT 1 FROM candidates_candidates WHERE uid = %(uid)s)
+        INSERT INTO candidates_candidates(uid, name, birth, identifiers)
+        VALUES (%(uid)s, %(name)s, %(birth)s, %(identifiers)s)
+        ON CONFLICT (uid)
+        DO UPDATE
+        SET name = %(name)s, birth = %(birth)s, identifiers = %(identifiers)s
     ''', complement)
     c.execute('''
         INSERT INTO candidates_terms(id, candidate_id, latest_term_id, ad, number, priority, name, gender, party, constituency, county, district, elected, contact_details, votes, education, experience, remark, image, links, platform)
