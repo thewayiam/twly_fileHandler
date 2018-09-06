@@ -50,6 +50,7 @@ def PoliticalContributions(data):
             SELECT x from (
                 SELECT DISTINCT(value) as x
                 FROM jsonb_array_elements(politicalcontributions)
+                WHERE value->'title' is not null
             ) t ORDER BY x->'ad' DESC
         ) tt)
         WHERE candidate_id = %(candidate_uid)s AND ad >= %(ad)s
@@ -75,7 +76,13 @@ for f in glob.glob('*.json'):
                     break
         if not candidate.has_key('ad'):
             candidate['ad'] = ad_election_year[candidate['election_year']]
-        pc = [{'ad': candidate['ad'], 'election_year': candidate['election_year'], 'pc': pc}]
+        pc = [{
+            'ad': candidate['ad'],
+            'election_year': candidate['election_year'],
+            'title': candidate.get('title', 'legislators'),
+            'election_name': candidate.get('election_name', u'%s立法委員選舉' % candidate['county']),
+            'pc': pc
+        }]
         candidate['politicalcontributions'] = json.dumps(pc)
         candidate['candidate_uid'] = candidate_term_id(candidate)
         PoliticalContributions(candidate)
